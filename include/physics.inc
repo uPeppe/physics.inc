@@ -26,6 +26,11 @@
 #define FLOAT_NEG_INFINITY (Float:0xFF800000)
 #define FLOAT_NAN     (Float:0xFFFFFFFF)
 
+/* Callbacks */
+forward PHY_OnObjectUpdate(objectid);
+forward PHY_OnObjectCollideWithObject(object1, object2);
+forward PHY_OnObjectCollideWithWall(objectid, wallid);
+
 
 enum (<<= 1)
 {
@@ -217,6 +222,8 @@ public PHY_CoreTimer()
 		            	            PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
                            			PHY_Object[b][PHY_VX] = newvx2 * floatcos(angle, degrees) - newvy2 * floatsin(angle, degrees);
 		            	            PHY_Object[b][PHY_VY] = newvx2 * floatsin(angle, degrees) + newvy2 * floatcos(angle, degrees);
+
+                                    CallLocalFunction("PHY_OnObjectCollideWithObject", "dd", a, b);
 								}
 					        }
 					    }
@@ -241,13 +248,16 @@ public PHY_CoreTimer()
 									angle = -angle;
 	                                PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
 	        						PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
-	        					}
+
+                                    CallLocalFunction("PHY_OnObjectCollideWithWall", "dd", a, w);
+								}
 					        }
 					    }
 					}
 				}
 	        }
 	        SetObjectPos(a, x1, y1, z1);
+	        CallLocalFunction("PHY_OnObjectUpdate", "d", a);
 	    }
 	}
 	return 1;
