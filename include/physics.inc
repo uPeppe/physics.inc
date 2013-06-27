@@ -72,6 +72,9 @@ enum E_PHY_WALL
 	Float:PHY_Y2,
 	Float:PHY_Z1,
 	Float:PHY_Z2,
+	Float:PHY_A,
+	Float:PHY_B,
+	Float:PHY_C,
 	Float:PHY_M,
 	Float:PHY_Q
 }
@@ -235,11 +238,13 @@ public PHY_CoreTimer()
 					{
 					    if(PHY_Wall[w][PHY_Created] && (!PHY_Object[a][PHY_World] || !PHY_Wall[w][PHY_World] || PHY_Object[a][PHY_World] == PHY_Wall[w][PHY_World]))
 					    {
-					        dist = (y1 - PHY_Wall[w][PHY_M] * x1 - PHY_Wall[w][PHY_Q])/floatsqroot(1 + PHY_Wall[w][PHY_M] * PHY_Wall[w][PHY_M]);
-                            angle = -atan(PHY_Wall[w][PHY_M]);
+					        //dist = (y1 - PHY_Wall[w][PHY_M] * x1 - PHY_Wall[w][PHY_Q])/floatsqroot(1 + PHY_Wall[w][PHY_M] * PHY_Wall[w][PHY_M]);
+							dist = (PHY_Wall[w][PHY_A] * x1 + PHY_Wall[w][PHY_B] * y1 + PHY_Wall[w][PHY_C])/floatsqroot(PHY_Wall[w][PHY_A] * PHY_Wall[w][PHY_A] + PHY_Wall[w][PHY_B] * PHY_Wall[w][PHY_B]);
+							angle = (PHY_Wall[w][PHY_M] == PHY_Wall[w][PHY_M]) ? -atan(PHY_Wall[w][PHY_M]) : 90.0;
 							if(floatabs(dist) <= PHY_Object[a][PHY_Size] && PHY_Wall[w][PHY_X1] - PHY_Object[a][PHY_Size] <= x1 <= PHY_Wall[w][PHY_X2] + PHY_Object[a][PHY_Size] && PHY_Wall[w][PHY_Z1] - PHY_Object[a][PHY_Size] <= z1 <= PHY_Wall[w][PHY_Z2] + PHY_Object[a][PHY_Size])
 					        {
-					            mag = y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees) - (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) * PHY_Wall[w][PHY_M] - PHY_Wall[w][PHY_Q];
+					            //mag = y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees) - (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) * PHY_Wall[w][PHY_M] - PHY_Wall[w][PHY_Q];
+					            mag = PHY_Wall[w][PHY_A] * (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) + PHY_Wall[w][PHY_B] * (y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees)) + PHY_Wall[w][PHY_C];
 					            if((dist >= 0) ? (mag <= 0) : (mag > 0))
 					            {
 	       	         				newvx1 = PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees);
@@ -423,7 +428,10 @@ stock PHY_CreateWall(Float:x1, Float:y1, Float:x2, Float:y2, Float:low = FLOAT_N
 	        }
 	        PHY_Wall[i][PHY_Z1] = low;
 	        PHY_Wall[i][PHY_Z2] = high;
-	        PHY_Wall[i][PHY_M] = (y2 - y1)/(x2 - x1);
+	        PHY_Wall[i][PHY_A] = -(y2 - y1);
+			PHY_Wall[i][PHY_B] = (x2 - x1);
+			PHY_Wall[i][PHY_C] = (y2 - y1) * x1 - (x2 - x1) * y1;
+	        PHY_Wall[i][PHY_M] = (x2 - x1) != 0 ? (y2 - y1)/(x2 - x1) : FLOAT_NAN;
 			PHY_Wall[i][PHY_Q] = -((y2 - y1) * x1)/(x2 - x1) + y1;
 	        return i;
 	    }

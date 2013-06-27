@@ -31,18 +31,16 @@ public OnGameModeInit()
     
     for(new i; i < sizeof PoolBall; i++)
     {
-        PHY_InitObject(PoolBall[i], 3003, _, _, PHY_MODE_2D); // Note that I typed modelid 3003 because all the balls are equal.
+        PHY_InitObject(PoolBall[i], 3003, _, _, PHY_MODE_2D); // Notice that I typed modelid 3003 because all the balls are equal.
         PHY_SetObjectFriction(PoolBall[i], 0.08);
         PHY_RollObject(PoolBall[i]);
 	}
 	
 	PHY_CreateWall(509.627 - 0.038, -85.780, 510.598 + 0.038, -85.780);
-	PHY_CreateWall(510.5981 + 0.038, -85.780, 510.5980 + 0.038, -83.907); // Remember to type a x1 different to x2.
+	PHY_CreateWall(510.598 + 0.038, -85.780, 510.598 + 0.038, -83.907);
 	PHY_CreateWall(510.598 + 0.038, -83.907, 509.627 - 0.038, -83.907);
-	PHY_CreateWall(509.6271 - 0.038, -83.907, 509.6270 - 0.038, -85.780); // ^
-	
-	printf("%f", GetColSphereRadius(3003));
-    
+	PHY_CreateWall(509.627 - 0.038, -83.907, 509.627 - 0.038, -85.780);
+  
 	return 1;
 }
 
