@@ -78,7 +78,7 @@ enum E_PHY_WALL
 	Float:PHY_Y2,
 	Float:PHY_Z1,
 	Float:PHY_Z2,
-	Float:PHY_BoundConst,
+	Float:PHY_WallConst,
 	Float:PHY_A,
 	Float:PHY_B,
 	Float:PHY_C,
@@ -235,7 +235,7 @@ public PHY_CoreTimer()
 								//if((dist >= 0) ? (mag <= 0) : (mag >= 0))
 		       	         		newvx1 = PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees);
 				            	newvy1 = PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees);
-								newvy1 = -newvy1 * PHY_Wall[w][PHY_BoundConst];
+								newvy1 = -newvy1 * PHY_Wall[w][PHY_WallConst];
 								angle = -angle;
         						PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
 		        				PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
@@ -429,7 +429,7 @@ stock PHY_CreateWall(Float:x1, Float:y1, Float:x2, Float:y2, Float:constant = 1.
 		    PHY_Wall[i][PHY_Y2] = y2;
 	        PHY_Wall[i][PHY_Z1] = low;
 	        PHY_Wall[i][PHY_Z2] = high;
-	        PHY_Wall[i][PHY_BoundConst] = constant;
+	        PHY_Wall[i][PHY_WallConst] = constant;
 	        PHY_Wall[i][PHY_A] = -(y2 - y1);
 			PHY_Wall[i][PHY_B] = (x2 - x1);
 			PHY_Wall[i][PHY_C] = (y2 - y1) * x1 - (x2 - x1) * y1;
