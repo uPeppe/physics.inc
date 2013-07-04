@@ -22,9 +22,15 @@
 #define PHY_MODE_3D (0)
 #define PHY_MODE_2D (1)
 
-#define FLOAT_INFINITY   (Float:0x7F800000)
-#define FLOAT_NEG_INFINITY (Float:0xFF800000)
-#define FLOAT_NAN     (Float:0xFFFFFFFF)
+#if !defined FLOAT_INFINITY
+	#define FLOAT_INFINITY   (Float:0x7F800000)
+#endif
+#if !defined FLOAT_NEG_INFINITY
+	#define FLOAT_NEG_INFINITY (Float:0xFF800000)
+#endif
+#if !defined FLOAT_NAN
+	#define FLOAT_NAN     (Float:0xFFFFFFFF)
+#endif
 
 /* Callbacks */
 forward PHY_OnObjectUpdate(objectid);
@@ -72,11 +78,11 @@ enum E_PHY_WALL
 	Float:PHY_Y2,
 	Float:PHY_Z1,
 	Float:PHY_Z2,
+	Float:PHY_BoundConst,
 	Float:PHY_A,
 	Float:PHY_B,
 	Float:PHY_C,
-	Float:PHY_M,
-	Float:PHY_Q
+	Float:PHY_ANG
 }
 
 new
@@ -109,6 +115,8 @@ public PHY_CoreTimer()
 		Float:x1,
 	    Float:y1,
 	    Float:z1,
+	    Float:xclosest,
+	    Float:yclosest,
 	    Float:x2,
 	    Float:y2,
 	    Float:z2,
@@ -146,10 +154,6 @@ public PHY_CoreTimer()
 				z1 += (PHY_Object[a][PHY_VZ] * PHY_TIMER_INTERVAL)/1000;
 			if(PHY_IsObjectMoving(a))
 	        {
-                moveangle = atan2(PHY_Object[a][PHY_VY], PHY_Object[a][PHY_VX]) - 90.0;
-                if(moveangle < 0.0)
-					moveangle += 360.0;
-				speed = floatsqroot(PHY_Object[a][PHY_VX] * PHY_Object[a][PHY_VX] + PHY_Object[a][PHY_VY] * PHY_Object[a][PHY_VY]);
                 if(PHY_GetObjectMode(a) == PHY_MODE_3D)
 				{
 					if(z1 > PHY_Object[a][PHY_HighZBound] && PHY_Object[a][PHY_VZ] > 0)
@@ -173,23 +177,6 @@ public PHY_CoreTimer()
 						else
 							PHY_Object[a][PHY_VZ] -= (PHY_Object[a][PHY_Gravity] * PHY_TIMER_INTERVAL)/1000;
 					}
-				}
-				if(PHY_GetObjectFriction(a) != 0 && z1 == PHY_Object[a][PHY_LowZBound])
-				{
-				    speed -= (PHY_Object[a][PHY_Friction] * PHY_TIMER_INTERVAL)/1000;
-					if(speed < 0)
-					    speed = 0;
-				    PHY_Object[a][PHY_VX] = speed * floatsin(-moveangle, degrees);
-				    PHY_Object[a][PHY_VY] = speed * floatcos(-moveangle, degrees);
-				}
-				if(PHY_IsObjectRolling(a))
-				{
-				    GetObjectRot(a, rx, ry, rz);
-					rx -= ((speed * PHY_TIMER_INTERVAL)/1000) * (180/3.14159) / PHY_Object[a][PHY_Size];
-					if(rx < 0.0)
-					    rx += 360.0;
-		            rz = moveangle;
-		            SetObjectRot(a, rx, ry, rz);
 				}
 				if(!PHY_IsObjectGhostWithObjects(a))
 				{
@@ -240,25 +227,47 @@ public PHY_CoreTimer()
 					    {
 					        //dist = (y1 - PHY_Wall[w][PHY_M] * x1 - PHY_Wall[w][PHY_Q])/floatsqroot(1 + PHY_Wall[w][PHY_M] * PHY_Wall[w][PHY_M]);
 							dist = (PHY_Wall[w][PHY_A] * x1 + PHY_Wall[w][PHY_B] * y1 + PHY_Wall[w][PHY_C])/floatsqroot(PHY_Wall[w][PHY_A] * PHY_Wall[w][PHY_A] + PHY_Wall[w][PHY_B] * PHY_Wall[w][PHY_B]);
-							angle = (PHY_Wall[w][PHY_M] == PHY_Wall[w][PHY_M]) ? -atan(PHY_Wall[w][PHY_M]) : 90.0;
-							if(floatabs(dist) <= PHY_Object[a][PHY_Size] && PHY_Wall[w][PHY_X1] - PHY_Object[a][PHY_Size] <= x1 <= PHY_Wall[w][PHY_X2] + PHY_Object[a][PHY_Size] && PHY_Wall[w][PHY_Z1] - PHY_Object[a][PHY_Size] <= z1 <= PHY_Wall[w][PHY_Z2] + PHY_Object[a][PHY_Size])
+							angle = PHY_Wall[w][PHY_ANG];
+							if(floatabs(dist) < PHY_Object[a][PHY_Size] && PHY_Wall[w][PHY_Z1] + PHY_Object[a][PHY_Size] < z1 < PHY_Wall[w][PHY_Z2] - PHY_Object[a][PHY_Size] && check_segment_intersection(PHY_Wall[w][PHY_X1], PHY_Wall[w][PHY_Y1], PHY_Wall[w][PHY_X2], PHY_Wall[w][PHY_Y2], x1, y1, PHY_Object[a][PHY_Size], xclosest, yclosest))
 					        {
 					            //mag = y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees) - (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) * PHY_Wall[w][PHY_M] - PHY_Wall[w][PHY_Q];
-					            mag = PHY_Wall[w][PHY_A] * (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) + PHY_Wall[w][PHY_B] * (y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees)) + PHY_Wall[w][PHY_C];
-					            if((dist >= 0) ? (mag <= 0) : (mag > 0))
-					            {
-	       	         				newvx1 = PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees);
-			            	        newvy1 = PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees);
-									newvy1 = -newvy1;
-									angle = -angle;
-	                                PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
-	        						PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
-
-                                    CallLocalFunction("PHY_OnObjectCollideWithWall", "dd", a, w);
-								}
+								//mag = PHY_Wall[w][PHY_A] * (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) + PHY_Wall[w][PHY_B] * (y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees)) + PHY_Wall[w][PHY_C];
+								//if((dist >= 0) ? (mag <= 0) : (mag >= 0))
+		       	         		newvx1 = PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees);
+				            	newvy1 = PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees);
+								newvy1 = -newvy1 * PHY_Wall[w][PHY_BoundConst];
+								angle = -angle;
+        						PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
+		        				PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
+								
+								angle = angle + (newvy1 > 0 ? 90.0 : -90.0);
+								x1 = xclosest + (PHY_Object[a][PHY_Size] + 0.001) * floatcos(angle, degrees);
+								y1 = yclosest + (PHY_Object[a][PHY_Size] + 0.001) * floatsin(angle, degrees);
+								
+	                            CallLocalFunction("PHY_OnObjectCollideWithWall", "dd", a, w);
 					        }
 					    }
 					}
+				}
+				moveangle = atan2(PHY_Object[a][PHY_VY], PHY_Object[a][PHY_VX]) - 90.0;
+				speed = floatsqroot(PHY_Object[a][PHY_VX] * PHY_Object[a][PHY_VX] + PHY_Object[a][PHY_VY] * PHY_Object[a][PHY_VY]);
+				if(PHY_GetObjectFriction(a) != 0 && z1 == PHY_Object[a][PHY_LowZBound])
+				{
+				    speed -= (PHY_Object[a][PHY_Friction] * PHY_TIMER_INTERVAL)/1000;
+					if(speed < 0)
+					    speed = 0;
+				    PHY_Object[a][PHY_VX] = speed * floatsin(-moveangle, degrees);
+				    PHY_Object[a][PHY_VY] = speed * floatcos(-moveangle, degrees);
+				}
+				if(PHY_IsObjectRolling(a))
+				{
+				    GetObjectRot(a, rx, ry, rz);
+					rx -= ((speed * PHY_TIMER_INTERVAL)/1000) * (180/3.14159) / PHY_Object[a][PHY_Size];
+					if(rx < 0.0)
+					    rx += 360.0;
+		            rz = moveangle;
+		            //PHY_Roll(rx, ry, rz, PHY_Object[a][PHY_VX], PHY_Object[a][PHY_VY], ((speed * PHY_TIMER_INTERVAL)/1000) * (180/3.14159) / PHY_Object[a][PHY_Size]);
+		            SetObjectRot(a, rx, ry, rz);
 				}
 	        }
 	        SetObjectPos(a, x1, y1, z1);
@@ -274,7 +283,7 @@ modelid - object's modelid, used to get its size with modelsizes include.
 mass - object's mass, it is like its weight and is used in collisions.
 size - object's sphere radius, taken from modelsizes.inc by default.
 mode - PHY_MODE_3D or PHY_MODE_2D. */
-stock PHY_InitObject(objectid, modelid = 0, Float:mass = 1.0, Float:size = 0.0, mode = PHY_MODE_3D)
+stock PHY_InitObject(objectid, modelid = 0, Float:mass = 1.0, Float:size = FLOAT_NAN, mode = PHY_MODE_3D)
 {
 	if(IsValidObject(objectid))
 	{
@@ -290,7 +299,7 @@ stock PHY_InitObject(objectid, modelid = 0, Float:mass = 1.0, Float:size = 0.0, 
 		PHY_Object[objectid][PHY_HighZBound] = FLOAT_INFINITY;
 		PHY_Object[objectid][PHY_BoundConst] = 0;
 	    
-	    if(size == 0.0)
+	    if(size != size)
 		{
 			if(modelid)
 			    PHY_Object[objectid][PHY_Size] = GetColSphereRadius(modelid);
@@ -303,7 +312,7 @@ stock PHY_InitObject(objectid, modelid = 0, Float:mass = 1.0, Float:size = 0.0, 
 }
 
 /* Stops using physics for objectid (doesn't destroy it). */
-stock PHY_ObjectDelete(objectid)
+stock PHY_DeleteObject(objectid)
 {
 	PHY_Object[objectid][PHY_Properties] = 0;
 	return 1;
@@ -403,8 +412,10 @@ stock PHY_SetObjectWorld(objectid, world)
 }
 
 /* Creates a collision wall (straight line) from A(x1, y1) to B(x2, y2).
+constant should be from 0.0 to 1.0. If it is 1.0 the object doesn't lose velocity,
+if it is 0.0 the object stops when it collides.
 low is the lowest wall's Z, high is the highest. If they're set to default the wall is like infinitely high.*/
-stock PHY_CreateWall(Float:x1, Float:y1, Float:x2, Float:y2, Float:low = FLOAT_NEG_INFINITY, Float:high = FLOAT_INFINITY)
+stock PHY_CreateWall(Float:x1, Float:y1, Float:x2, Float:y2, Float:constant = 1.0, Float:low = FLOAT_NEG_INFINITY, Float:high = FLOAT_INFINITY)
 {
 	for(new i; i < sizeof PHY_Wall; i++)
 	{
@@ -412,27 +423,18 @@ stock PHY_CreateWall(Float:x1, Float:y1, Float:x2, Float:y2, Float:low = FLOAT_N
 	    {
 	        PHY_Wall[i][PHY_Created] = 1;
 	        PHY_Wall[i][PHY_World] = 0;
-	        if(x2 > x1)
-	        {
-				PHY_Wall[i][PHY_X1] = x1;
-		        PHY_Wall[i][PHY_Y1] = y1;
-		        PHY_Wall[i][PHY_X2] = x2;
-		        PHY_Wall[i][PHY_Y2] = y2;
-	        }
-	        else
-	        {
-				PHY_Wall[i][PHY_X1] = x2;
-		        PHY_Wall[i][PHY_Y1] = y2;
-		        PHY_Wall[i][PHY_X2] = x1;
-		        PHY_Wall[i][PHY_Y2] = y1;
-	        }
+			PHY_Wall[i][PHY_X1] = x1;
+		    PHY_Wall[i][PHY_Y1] = y1;
+		    PHY_Wall[i][PHY_X2] = x2;
+		    PHY_Wall[i][PHY_Y2] = y2;
 	        PHY_Wall[i][PHY_Z1] = low;
 	        PHY_Wall[i][PHY_Z2] = high;
+	        PHY_Wall[i][PHY_BoundConst] = constant;
 	        PHY_Wall[i][PHY_A] = -(y2 - y1);
 			PHY_Wall[i][PHY_B] = (x2 - x1);
 			PHY_Wall[i][PHY_C] = (y2 - y1) * x1 - (x2 - x1) * y1;
-	        PHY_Wall[i][PHY_M] = (x2 - x1) != 0 ? (y2 - y1)/(x2 - x1) : FLOAT_NAN;
-			PHY_Wall[i][PHY_Q] = -((y2 - y1) * x1)/(x2 - x1) + y1;
+	        PHY_Wall[i][PHY_ANG] = atan2(y1 - y2, x1 - x2);
+			//PHY_Wall[i][PHY_Q] = -((y2 - y1) * x1)/(x2 - x1) + y1;
 	        return i;
 	    }
 	}
@@ -457,6 +459,155 @@ stock PHY_SetWallWorld(id, world)
 	return 0;
 }
 
+
+/* Privates */
+
+/* Function to make a better ball rolling, not used because it doesn't work well. */
+stock PHY_Roll(&Float:x, &Float:y, &Float:z, Float:dx, Float:dy, Float:speed)
+{
+	new Float:q_roll[4];
+	new Float:vx, Float:vy, Float:vz;
+	vectorcrossp(dx, dy, 0.0, 0.0, 0.0, 1.0, vx, vy, vz);
+	QuatFromAxisAngle(vx, vy, vz, -speed, q_roll[0], q_roll[1], q_roll[2], q_roll[3]);
+
+	new Float:q_rot[4];
+	EulerToQuaternion(x, y, z, q_rot[0], q_rot[1], q_rot[2], q_rot[3]);
+
+    new Float:q_res[4];
+    QuatMultiply(q_roll[0], q_roll[1], q_roll[2], q_roll[3], q_rot[0], q_rot[1], q_rot[2], q_rot[3], q_res[0], q_res[1], q_res[2], q_res[3]);
+
+	QuaternionToEuler(q_res[0], q_res[1], q_res[2], q_res[3], x, y, z);
+}
+
+stock QuatMultiply(Float:w1, Float:x1, Float:y1, Float:z1, Float:w2, Float:x2, Float:y2, Float:z2, &Float:q_w, &Float:q_x, &Float:q_y, &Float:q_z)
+{
+	q_w = w1*w2 - x1*x2 - y1*y2 - z1*z2;
+	q_x = w1*x2 + x1*w2 + y1*z2 - z1*y2;
+	q_y = w1*y2 - x1*z2 + y1*w2 + z1*x2;
+	q_z = w1*z2 + x1*y2 - y1*x2 + z1*w2;
+	
+	QuatNormalize(q_w, q_x, q_y, q_z);
+}
+
+stock QuatFromAxisAngle(Float:x, Float:y, Float:z, Float:angle, &Float:q_w, &Float:q_x, &Float:q_y, &Float:q_z)
+{
+    new
+		Float:omega,
+		Float:s;
+
+    s = floatsqroot(x*x + y*y + z*z);
+
+    if (s > 0.01)
+    {
+
+		x /= s;
+		y /= s;
+		z /= s;
+
+		omega = 0.5 * angle;
+		s = floatsin(omega, degrees);
+
+		q_x = s*x;
+		q_y = s*y;
+		q_z = s*z;
+		q_w = floatcos(omega, degrees);
+    }
+    else
+    {
+		q_x = 0.0;
+		q_y = 0.0;
+		q_z = 0.0;
+		q_w = 1.0;
+    }
+    
+    QuatNormalize(q_w, q_x, q_y, q_z);
+}
+  
+stock QuatNormalize(&Float:q_w, &Float:q_x, &Float:q_y, &Float:q_z)
+{
+    new Float:magnitude = floatsqroot(q_w*q_w + q_x*q_x + q_y*q_y + q_z*q_z);
+    if (magnitude == 0.0)
+    {
+		q_w = 1.0;
+		q_x = 0.0;
+		q_y = 0.0;
+		q_z = 0.0;
+    }
+    else
+    {
+		q_w /= magnitude;
+		q_x /= magnitude;
+		q_y /= magnitude;
+		q_z /= magnitude;
+    }
+}
+
+stock EulerToQuaternion(Float:z, Float:x, Float:y, &Float:q_w, &Float:q_x, &Float:q_y, &Float:q_z)
+{
+    new Float:c1 = floatcos(x, degrees);
+    new Float:s1 = floatsin(x, degrees);
+    new Float:c2 = floatcos(y, degrees);
+    new Float:s2 = floatsin(y, degrees);
+    new Float:c3 = floatcos(z, degrees);
+    new Float:s3 = floatsin(z, degrees);
+    q_w = floatsqroot(1.0 + c1 * c2 + c1*c3 - s1 * s2 * s3 + c2*c3) / 2.0;
+    new Float:w4 = (4.0 * q_w);
+    q_x = (c2 * s3 + c1 * s3 + s1 * s2 * c3) / w4 ;
+    q_y = (s1 * c2 + s1 * c3 + c1 * s2 * s3) / w4 ;
+    q_z = (-s1 * s3 + c1 * s2 * c3 +s2) / w4 ;
+    
+    QuatNormalize(q_w, q_x, q_y, q_z);
+}
+
+stock QuaternionToEuler(Float:q_w, Float:q_x, Float:q_y, Float:q_z, &Float:z, &Float:x, &Float:y)
+{
+	new Float:test = q_x*q_y + q_z*q_w;
+	if (test > 0.499) { // singularity at north pole
+		x = 2 * atan2(q_x,q_w);
+		y = 90.0;
+		z = 0;
+		return;
+	}
+	if (test < -0.499) { // singularity at south pole
+		x = -2 * atan2(q_x,q_w);
+		y = -90.0;
+		z = 0;
+		return;
+	}
+    new Float:sqx = q_x*q_x;
+    new Float:sqy = q_y*q_y;
+    new Float:sqz = q_z*q_z;
+    x = atan2(2*q_y*q_w-2*q_x*q_z , 1 - 2*sqy - 2*sqz);
+	y = asin(2*test);
+	z = atan2(2*q_x*q_w-2*q_y*q_z , 1 - 2*sqx - 2*sqz);
+}
+
+stock vectorcrossp(Float:v1x, Float:v1y, Float:v1z, Float:v2x, Float:v2y, Float:v2z, &Float:c1, &Float:c2, &Float:c3)
+{
+	c1 = (v1y * v2z) - (v1z * v2y),
+    c2 = (v1z * v2x) - (v1x * v2z),
+    c3 = (v1x * v2y) - (v1y * v2x);
+}
+
+stock Float:vectordotp(Float:v1x, Float:v1y, Float:v2x, Float:v2y)
+    return (v1x * v2x + v1y * v2y);
+
+stock check_segment_intersection(Float:x1, Float:y1, Float:x2, Float:y2, Float:xc, Float:yc, Float:r, &Float:x, &Float:y)
+{
+	new Float:v1[2];
+	new Float:v2[2];
+	v1[0] = x2 - x1;
+	v1[1] = y2 - y1;
+	v2[0] = xc - x1;
+	v2[1] = yc - y1;
+	new Float:v1_len = floatsqroot(v1[0] * v1[0] + v1[1] * v1[1]);
+	v1[0] /= v1_len;
+	v1[1] /= v1_len;
+	new Float:proj = vectordotp(v2[0], v2[1], v1[0], v1[1]);
+	x = proj * v1[0] + x1;
+	y = proj * v1[1] + y1;
+    return (0 - r < proj < v1_len + r);
+}
 
 #if defined _ALS_OnGameModeInit
     #undef OnGameModeInit

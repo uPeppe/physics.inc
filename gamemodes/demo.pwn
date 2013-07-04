@@ -8,7 +8,7 @@ public OnGameModeInit()
 {
 	SetGameModeText("Blank Script");
 	AddPlayerClass(0, 1958.3783, 1343.1572, 15.3746, 269.1425, 0, 0, 0, 0, 0, 0);
-	
+
 	PHY_CreateWall(1961.4270, 1339.6151, 1961.4269, 1346.3175);
 	PHY_CreateWall(1961.4269, 1346.3175, 1951.4360, 1345.8835);
 	PHY_CreateWall(1951.4360, 1345.8835, 1951.5145, 1340.2163);
@@ -54,10 +54,10 @@ public OnPlayerCommandText(playerid, cmdtext[])
 	{
 		new a = CreateObject(1598, 1960.3783, 1344.0, 15.3746-0.69, 0, 0, 0);
 		new b = CreateObject(2114, 1954.3783, 1344.0, 15.3746-0.69, 0, 0, 0);
-		PHY_InitObject(a, 1598, 1.4, _, PHY_MODE_2D);
+		PHY_InitObject(a, 1598, 1.0, _, PHY_MODE_2D);
 		PHY_InitObject(b, 2114, 1.0, _, PHY_MODE_2D);
-		PHY_MoveObject(a, -3.0, 0.0, 5.5);
-		PHY_MoveObject(b, 3.0, 0.0, 5.5);
+		PHY_MoveObject(a, 3.0, 0.0);
+		PHY_MoveObject(b, 0.0, 3.0);
 		PHY_RollObject(a);
 		PHY_RollObject(b);
 		PHY_SetObjectFriction(a, 0.25);
