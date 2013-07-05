@@ -204,9 +204,16 @@ public PHY_CoreTimer()
 		            	            tmpvx2 = PHY_Object[b][PHY_VX] * floatcos(angle, degrees) - PHY_Object[b][PHY_VY] * floatsin(angle, degrees);
 		            	            newvy2 = PHY_Object[b][PHY_VX] * floatsin(angle, degrees) + PHY_Object[b][PHY_VY] * floatcos(angle, degrees);
 
-                           			newvx1 = ((PHY_Object[a][PHY_Mass] - PHY_Object[b][PHY_Mass]) * tmpvx1 + 2 * PHY_Object[b][PHY_Mass] * tmpvx2) / (PHY_Object[a][PHY_Mass] + PHY_Object[b][PHY_Mass]);
-		            	            newvx2 = ((PHY_Object[b][PHY_Mass] - PHY_Object[a][PHY_Mass]) * tmpvx2 + 2 * PHY_Object[a][PHY_Mass] * tmpvx1) / (PHY_Object[a][PHY_Mass] + PHY_Object[b][PHY_Mass]);
-
+									if(PHY_Object[a][PHY_Mass] == FLOAT_INFINITY)
+										newvx2 = -tmpvx2;
+									else if(PHY_Object[b][PHY_Mass] == FLOAT_INFINITY)
+										newvx1 = -tmpvx1;
+                           			else
+							   		{
+							   			newvx1 = ((PHY_Object[a][PHY_Mass] - PHY_Object[b][PHY_Mass]) * tmpvx1 + 2 * PHY_Object[b][PHY_Mass] * tmpvx2) / (PHY_Object[a][PHY_Mass] + PHY_Object[b][PHY_Mass]);
+		            	            	newvx2 = ((PHY_Object[b][PHY_Mass] - PHY_Object[a][PHY_Mass]) * tmpvx2 + 2 * PHY_Object[a][PHY_Mass] * tmpvx1) / (PHY_Object[a][PHY_Mass] + PHY_Object[b][PHY_Mass]);
+									}
+									
 									angle = -angle;
                                     PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
 		            	            PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
