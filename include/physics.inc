@@ -456,7 +456,7 @@ stock PHY_DestroyWall(wallid)
 }
 
 /* Se PHY_SetObjectWorld(objectid, world). */
-stock PHY_SetWallWorld(id, world)
+stock PHY_SetWallWorld(wallid, world)
 {
 	if(PHY_Wall[wallid][PHY_Created])
 	{
