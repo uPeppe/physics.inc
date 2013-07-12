@@ -15,6 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
 #include <modelsizes>
+#include <foreach>
 
 #define PHY_TIMER_INTERVAL (20)
 #define PHY_MAX_WALLS (512)
@@ -65,7 +66,8 @@ enum E_PHY_OBJECT
 }
 
 new
-	PHY_Object[MAX_OBJECTS][E_PHY_OBJECT];
+	PHY_Object[MAX_OBJECTS][E_PHY_OBJECT],
+	Iterator:ITER_Object<MAX_OBJECTS>;
 
 
 enum E_PHY_WALL
@@ -86,7 +88,8 @@ enum E_PHY_WALL
 }
 
 new
-	PHY_Wall[PHY_MAX_WALLS][E_PHY_WALL];
+	PHY_Wall[PHY_MAX_WALLS][E_PHY_WALL],
+	Iterator:ITER_Wall<PHY_MAX_WALLS>;
 
 /* Macros are self-explanatory */
 #define PHY_IsObjectUsingPhysics(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_USED)
@@ -120,9 +123,6 @@ public PHY_CoreTimer()
 	    Float:x2,
 	    Float:y2,
 	    Float:z2,
-	    Float:rx,
-	    Float:ry,
-	    Float:rz,
 	    Float:speed,
 	    Float:dx,
 	    Float:dy,
@@ -143,7 +143,7 @@ public PHY_CoreTimer()
 		Float:newvy2,
 		Float:newvx1,
 		Float:newvx2;
-	for(new a; a < sizeof PHY_Object; a++)
+	foreach(ITER_Object, a)
 	{
 	    if(PHY_Object[a][PHY_Properties] & PHY_OBJECT_USED)
 	    {
@@ -180,9 +180,9 @@ public PHY_CoreTimer()
 				}
 				if(!PHY_IsObjectGhostWithObjects(a))
 				{
-					for(new b; b < sizeof PHY_Object; b++)
+					foreach(ITER_Object, b)
 					{
-					    if(PHY_Object[b][PHY_Properties] & PHY_OBJECT_USED && !PHY_IsObjectGhostWithObjects(b) && (!PHY_Object[a][PHY_World] || !PHY_Object[b][PHY_World] || PHY_Object[a][PHY_World] == PHY_Object[b][PHY_World]))
+					    if(a != b && PHY_Object[b][PHY_Properties] & PHY_OBJECT_USED && !PHY_IsObjectGhostWithObjects(b) && (!PHY_Object[a][PHY_World] || !PHY_Object[b][PHY_World] || PHY_Object[a][PHY_World] == PHY_Object[b][PHY_World]))
 					    {
 					        GetObjectPos(b, x2, y2, z2);
 					        dx = x1 - x2;
@@ -228,9 +228,9 @@ public PHY_CoreTimer()
 				}
 				if(!PHY_IsObjectGhostWithWalls(a))
 				{
-					for(new w; w < sizeof PHY_Wall; w++)
+					foreach(ITER_Wall, w)
 					{
-					    if(PHY_Wall[w][PHY_Created] && (!PHY_Object[a][PHY_World] || !PHY_Wall[w][PHY_World] || PHY_Object[a][PHY_World] == PHY_Wall[w][PHY_World]))
+					    if((!PHY_Object[a][PHY_World] || !PHY_Wall[w][PHY_World] || PHY_Object[a][PHY_World] == PHY_Wall[w][PHY_World]))
 					    {
 					        //dist = (y1 - PHY_Wall[w][PHY_M] * x1 - PHY_Wall[w][PHY_Q])/floatsqroot(1 + PHY_Wall[w][PHY_M] * PHY_Wall[w][PHY_M]);
 							dist = (PHY_Wall[w][PHY_A] * x1 + PHY_Wall[w][PHY_B] * y1 + PHY_Wall[w][PHY_C])/floatsqroot(PHY_Wall[w][PHY_A] * PHY_Wall[w][PHY_A] + PHY_Wall[w][PHY_B] * PHY_Wall[w][PHY_B]);
@@ -268,13 +268,7 @@ public PHY_CoreTimer()
 				}
 				if(PHY_IsObjectRolling(a))
 				{
-				    GetObjectRot(a, rx, ry, rz);
-					rx -= ((speed * PHY_TIMER_INTERVAL)/1000) * (180/3.14159) / PHY_Object[a][PHY_Size];
-					if(rx < 0.0)
-					    rx += 360.0;
-		            rz = moveangle;
-		            //PHY_Roll(rx, ry, rz, PHY_Object[a][PHY_VX], PHY_Object[a][PHY_VY], ((speed * PHY_TIMER_INTERVAL)/1000) * (180/3.14159) / PHY_Object[a][PHY_Size]);
-		            SetObjectRot(a, rx, ry, rz);
+				    PHY_ApplyRotation(a, speed, moveangle);
 				}
 	        }
 	        SetObjectPos(a, x1, y1, z1);
@@ -313,6 +307,8 @@ stock PHY_InitObject(objectid, modelid = 0, Float:mass = 1.0, Float:size = FLOAT
 		}
 		else
 			PHY_Object[objectid][PHY_Size] = size;
+			
+		Iter_Add(ITER_Object, objectid);
 	    return 1;
 	}
 	return 0;
@@ -322,6 +318,7 @@ stock PHY_InitObject(objectid, modelid = 0, Float:mass = 1.0, Float:size = FLOAT
 stock PHY_DeleteObject(objectid)
 {
 	PHY_Object[objectid][PHY_Properties] = 0;
+	Iter_Remove(ITER_Object, objectid);
 	return 1;
 }
 
@@ -346,6 +343,28 @@ stock PHY_GetObjectVelocity(objectid, &Float:vx, &Float:vy, &Float:vz)
 	    vx = PHY_Object[objectid][PHY_VX];
 	    vy = PHY_Object[objectid][PHY_VY];
 	    vz = PHY_Object[objectid][PHY_VZ];
+	    return 1;
+	}
+	return 0;
+}
+
+/* Self-explanatory */
+stock PHY_GetObjectSpeed(objectid, &Float:speed, _3D = 0)
+{
+    if(PHY_Object[objectid][PHY_Properties] & PHY_OBJECT_USED)
+	{
+	    speed = floatsqroot(PHY_Object[objectid][PHY_VX] * PHY_Object[objectid][PHY_VX] + PHY_Object[objectid][PHY_VY] * PHY_Object[objectid][PHY_VY] + _3D ? (PHY_Object[objectid][PHY_VZ] * PHY_Object[objectid][PHY_VZ]) : 0.0);
+	    return 1;
+	}
+	return 0;
+}
+
+/* Self-explanatory */
+stock PHY_GetObjectMoveAngle(objectid, &Float:moveangle)
+{
+    if(PHY_Object[objectid][PHY_Properties] & PHY_OBJECT_USED)
+	{
+        moveangle = atan2(PHY_Object[objectid][PHY_VY], PHY_Object[objectid][PHY_VX]) - 90.0;
 	    return 1;
 	}
 	return 0;
@@ -418,13 +437,30 @@ stock PHY_SetObjectWorld(objectid, world)
 	return 0;
 }
 
+/* Used internally to rotate the objects */
+stock PHY_ApplyRotation(objectid, Float:speed, Float:moveangle)
+{
+	new
+	    Float:rx, Float:ry, Float:rz;
+    GetObjectRot(objectid, rx, ry, rz);
+	rx -= ((speed * PHY_TIMER_INTERVAL)/1000) * (180/3.14159) / PHY_Object[objectid][PHY_Size];
+	if(rx < 0.0)
+		rx += 360.0;
+	rz = moveangle;
+	//PHY_Roll(rx, ry, rz, PHY_Object[a][PHY_VX], PHY_Object[a][PHY_VY], ((speed * PHY_TIMER_INTERVAL)/1000) * (180/3.14159) / PHY_Object[a][PHY_Size]);
+	SetObjectRot(objectid, rx, ry, rz);
+	return 1;
+}
+
 /* Creates a collision wall (straight line) from A(x1, y1) to B(x2, y2).
 constant should be from 0.0 to 1.0. If it is 1.0 the object doesn't lose velocity,
 if it is 0.0 the object stops when it collides.
 low is the lowest wall's Z, high is the highest. If they're set to default the wall is like infinitely high.*/
 stock PHY_CreateWall(Float:x1, Float:y1, Float:x2, Float:y2, Float:constant = 1.0, Float:low = FLOAT_NEG_INFINITY, Float:high = FLOAT_INFINITY)
 {
-	for(new i; i < sizeof PHY_Wall; i++)
+	new
+		i = Iter_Free(ITER_Wall);
+	if(i != -1)
 	{
 	    if(!PHY_Wall[i][PHY_Created])
 	    {
@@ -442,6 +478,8 @@ stock PHY_CreateWall(Float:x1, Float:y1, Float:x2, Float:y2, Float:constant = 1.
 			PHY_Wall[i][PHY_C] = (y2 - y1) * x1 - (x2 - x1) * y1;
 	        PHY_Wall[i][PHY_ANG] = atan2(y1 - y2, x1 - x2);
 			//PHY_Wall[i][PHY_Q] = -((y2 - y1) * x1)/(x2 - x1) + y1;
+			
+			Iter_Add(ITER_Wall, i);
 	        return i;
 	    }
 	}
@@ -452,6 +490,7 @@ stock PHY_CreateWall(Float:x1, Float:y1, Float:x2, Float:y2, Float:constant = 1.
 stock PHY_DestroyWall(wallid)
 {
 	PHY_Wall[wallid][PHY_Created] = 0;
+	Iter_Remove(ITER_Wall, wallid);
 	return 1;
 }
 
