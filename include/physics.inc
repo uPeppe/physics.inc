@@ -187,7 +187,7 @@ public PHY_CoreTimer()
 					        GetObjectPos(b, x2, y2, z2);
 					        dx = x1 - x2;
 					        dy = y1 - y2;
-					        dz = (PHY_GetObjectMode(a) == PHY_MODE_3D || PHY_GetObjectMode(b) == PHY_MODE_3D) ? (z1 - z2) : (0.0);
+					        dz = (PHY_GetObjectMode(a) == PHY_MODE_3D && PHY_GetObjectMode(b) == PHY_MODE_3D) ? (z1 - z2) : (0.0);
 					        dist = (dx * dx) + (dy * dy) + (dz * dz);
 					        maxdist = PHY_Object[a][PHY_Size] + PHY_Object[b][PHY_Size];
 					        if(dist <= (maxdist * maxdist))
