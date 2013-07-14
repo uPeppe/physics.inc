@@ -258,7 +258,7 @@ public PHY_CoreTimer()
 				}
 				moveangle = atan2(PHY_Object[a][PHY_VY], PHY_Object[a][PHY_VX]) - 90.0;
 				speed = floatsqroot(PHY_Object[a][PHY_VX] * PHY_Object[a][PHY_VX] + PHY_Object[a][PHY_VY] * PHY_Object[a][PHY_VY]);
-				if(PHY_GetObjectFriction(a) != 0 && z1 == PHY_Object[a][PHY_LowZBound])
+				if(PHY_GetObjectFriction(a) != 0/* && z1 == PHY_Object[a][PHY_LowZBound]*/)
 				{
 				    speed -= (PHY_Object[a][PHY_Friction] * PHY_TIMER_INTERVAL)/1000;
 					if(speed < 0)
@@ -443,7 +443,7 @@ stock PHY_ApplyRotation(objectid, Float:speed, Float:moveangle)
 	new
 	    Float:rx, Float:ry, Float:rz;
     GetObjectRot(objectid, rx, ry, rz);
-	rx -= ((speed * PHY_TIMER_INTERVAL)/1000) * (180/3.14159) / PHY_Object[objectid][PHY_Size];
+	rx -= speed * (float(PHY_TIMER_INTERVAL)/1000.0) * (180.0/3.14159) / PHY_Object[objectid][PHY_Size];
 	if(rx < 0.0)
 		rx += 360.0;
 	rz = moveangle;
