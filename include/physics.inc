@@ -15,6 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
 #include <modelsizes>
+#pragma compress 1
 #include <foreach>
 
 #define PHY_TIMER_INTERVAL (20)
@@ -267,9 +268,7 @@ public PHY_CoreTimer()
 				    PHY_Object[a][PHY_VY] = speed * floatcos(-moveangle, degrees);
 				}
 				if(PHY_IsObjectRolling(a))
-				{
 				    PHY_ApplyRotation(a, speed, moveangle);
-				}
 	        }
 	        SetObjectPos(a, x1, y1, z1);
 	        CallLocalFunction("PHY_OnObjectUpdate", "d", a);
