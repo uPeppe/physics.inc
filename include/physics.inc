@@ -59,7 +59,11 @@ enum E_PHY_OBJECT
 	Float:PHY_VX,
 	Float:PHY_VY,
 	Float:PHY_VZ,
+	Float:PHY_AX,
+	Float:PHY_AY,
+	Float:PHY_AZ,
 	Float:PHY_Friction,
+	Float:PHY_AirResistance,
 	Float:PHY_Gravity,
 	Float:PHY_LowZBound,
 	Float:PHY_HighZBound,
@@ -101,6 +105,7 @@ new
 #define PHY_IsObjectMoving(%1) (PHY_Object[%1][PHY_VX] != 0 || PHY_Object[%1][PHY_VY] != 0 || PHY_Object[%1][PHY_VZ] != 0)
 #define PHY_IsObjectRolling(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_ROLL)
 #define PHY_GetObjectFriction(%1) (PHY_Object[%1][PHY_Friction])
+#define PHY_GetObjectAirResistance(%1) (PHY_Object[%1][PHY_AirResistance])
 #define PHY_GetObjectGravity(%1) (PHY_Object[%1][PHY_Gravity])
 #define PHY_GetObjectMode(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_MODE)
 
@@ -149,36 +154,36 @@ public PHY_CoreTimer()
 	    if(PHY_Object[a][PHY_Properties] & PHY_OBJECT_USED)
 	    {
             GetObjectPos(a, x1, y1, z1);
-            x1 += (PHY_Object[a][PHY_VX] * PHY_TIMER_INTERVAL)/1000;
-			y1 += (PHY_Object[a][PHY_VY] * PHY_TIMER_INTERVAL)/1000;
+            x1 += PHY_Object[a][PHY_VX] * (PHY_TIMER_INTERVAL/1000.0);
+			y1 += PHY_Object[a][PHY_VY] * (PHY_TIMER_INTERVAL/1000.0);
 			if(PHY_GetObjectMode(a) == PHY_MODE_3D)
-				z1 += (PHY_Object[a][PHY_VZ] * PHY_TIMER_INTERVAL)/1000;
+			{
+			    z1 += PHY_Object[a][PHY_VZ] * (PHY_TIMER_INTERVAL/1000.0);
+			    
+				if(z1 > PHY_Object[a][PHY_HighZBound] && PHY_Object[a][PHY_VZ] > 0)
+				{
+					PHY_Object[a][PHY_VZ] = -PHY_Object[a][PHY_VZ] * PHY_Object[a][PHY_BoundConst];
+					z1 = PHY_Object[a][PHY_HighZBound];
+				}
+				else if(z1 < PHY_Object[a][PHY_LowZBound] && PHY_Object[a][PHY_VZ] < 0)
+				{
+					PHY_Object[a][PHY_VZ] = -PHY_Object[a][PHY_VZ] * PHY_Object[a][PHY_BoundConst];
+					z1 = PHY_Object[a][PHY_LowZBound];
+				}
+				if(PHY_GetObjectGravity(a) != 0)
+	            {
+					if(PHY_Object[a][PHY_VZ] > 0)
+					{
+						PHY_Object[a][PHY_VZ] -= PHY_Object[a][PHY_Gravity] * (PHY_TIMER_INTERVAL/1000.0);
+						if(PHY_Object[a][PHY_VZ] < 0)
+							PHY_Object[a][PHY_VZ] = 0;
+					}
+					else
+						PHY_Object[a][PHY_VZ] -= PHY_Object[a][PHY_Gravity] * (PHY_TIMER_INTERVAL/1000.0);
+				}
+			}
 			if(PHY_IsObjectMoving(a))
 	        {
-                if(PHY_GetObjectMode(a) == PHY_MODE_3D)
-				{
-					if(z1 > PHY_Object[a][PHY_HighZBound] && PHY_Object[a][PHY_VZ] > 0)
-					{
-						PHY_Object[a][PHY_VZ] = -PHY_Object[a][PHY_VZ] * PHY_Object[a][PHY_BoundConst];
-						z1 = PHY_Object[a][PHY_HighZBound];
-					}
-					else if(z1 < PHY_Object[a][PHY_LowZBound] && PHY_Object[a][PHY_VZ] < 0)
-					{
-					    PHY_Object[a][PHY_VZ] = -PHY_Object[a][PHY_VZ] * PHY_Object[a][PHY_BoundConst];
-					    z1 = PHY_Object[a][PHY_LowZBound];
-					}
-					if(PHY_GetObjectGravity(a) != 0)
-	                {
-					    if(PHY_Object[a][PHY_VZ] > 0)
-						{
-							PHY_Object[a][PHY_VZ] -= (PHY_Object[a][PHY_Gravity] * PHY_TIMER_INTERVAL)/1000;
-							if(PHY_Object[a][PHY_VZ] < 0)
-							    PHY_Object[a][PHY_VZ] = 0;
-						}
-						else
-							PHY_Object[a][PHY_VZ] -= (PHY_Object[a][PHY_Gravity] * PHY_TIMER_INTERVAL)/1000;
-					}
-				}
 				if(!PHY_IsObjectGhostWithObjects(a))
 				{
 					foreach(ITER_Object, b)
@@ -234,9 +239,9 @@ public PHY_CoreTimer()
 					    if((!PHY_Object[a][PHY_World] || !PHY_Wall[w][PHY_World] || PHY_Object[a][PHY_World] == PHY_Wall[w][PHY_World]))
 					    {
 					        //dist = (y1 - PHY_Wall[w][PHY_M] * x1 - PHY_Wall[w][PHY_Q])/floatsqroot(1 + PHY_Wall[w][PHY_M] * PHY_Wall[w][PHY_M]);
-							dist = (PHY_Wall[w][PHY_A] * x1 + PHY_Wall[w][PHY_B] * y1 + PHY_Wall[w][PHY_C])/floatsqroot(PHY_Wall[w][PHY_A] * PHY_Wall[w][PHY_A] + PHY_Wall[w][PHY_B] * PHY_Wall[w][PHY_B]);
+							//dist = (PHY_Wall[w][PHY_A] * x1 + PHY_Wall[w][PHY_B] * y1 + PHY_Wall[w][PHY_C])/floatsqroot(PHY_Wall[w][PHY_A] * PHY_Wall[w][PHY_A] + PHY_Wall[w][PHY_B] * PHY_Wall[w][PHY_B]);
 							angle = PHY_Wall[w][PHY_ANG];
-							if(floatabs(dist) < PHY_Object[a][PHY_Size] && PHY_Wall[w][PHY_Z1] + PHY_Object[a][PHY_Size] < z1 < PHY_Wall[w][PHY_Z2] - PHY_Object[a][PHY_Size] && check_segment_intersection(PHY_Wall[w][PHY_X1], PHY_Wall[w][PHY_Y1], PHY_Wall[w][PHY_X2], PHY_Wall[w][PHY_Y2], x1, y1, PHY_Object[a][PHY_Size], xclosest, yclosest))
+							if(PHY_Wall[w][PHY_Z1] + PHY_Object[a][PHY_Size] < z1 < PHY_Wall[w][PHY_Z2] - PHY_Object[a][PHY_Size] && check_segment_intersection(PHY_Wall[w][PHY_X1], PHY_Wall[w][PHY_Y1], PHY_Wall[w][PHY_X2], PHY_Wall[w][PHY_Y2], x1, y1, PHY_Object[a][PHY_Size], xclosest, yclosest) /* && floatabs(dist) < PHY_Object[a][PHY_Size]*/)
 					        {
 					            //mag = y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees) - (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) * PHY_Wall[w][PHY_M] - PHY_Wall[w][PHY_Q];
 								//mag = PHY_Wall[w][PHY_A] * (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) + PHY_Wall[w][PHY_B] * (y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees)) + PHY_Wall[w][PHY_C];
@@ -259,17 +264,28 @@ public PHY_CoreTimer()
 				}
 				moveangle = atan2(PHY_Object[a][PHY_VY], PHY_Object[a][PHY_VX]) - 90.0;
 				speed = floatsqroot(PHY_Object[a][PHY_VX] * PHY_Object[a][PHY_VX] + PHY_Object[a][PHY_VY] * PHY_Object[a][PHY_VY]);
-				if(PHY_GetObjectFriction(a) != 0/* && z1 == PHY_Object[a][PHY_LowZBound]*/)
+				if(PHY_GetObjectFriction(a) != 0 && z1 == PHY_Object[a][PHY_LowZBound])
 				{
-				    speed -= (PHY_Object[a][PHY_Friction] * PHY_TIMER_INTERVAL)/1000;
-					if(speed < 0)
+				    speed -= PHY_Object[a][PHY_Friction] * (PHY_TIMER_INTERVAL/1000.0);
+					if(speed < 0.001)
 					    speed = 0;
 				    PHY_Object[a][PHY_VX] = speed * floatsin(-moveangle, degrees);
 				    PHY_Object[a][PHY_VY] = speed * floatcos(-moveangle, degrees);
 				}
+				if(PHY_GetObjectAirResistance(a) != 0)
+				{
+					PHY_Object[a][PHY_VX] -= PHY_Object[a][PHY_VX] * PHY_Object[a][PHY_AirResistance] * (PHY_TIMER_INTERVAL/1000.0);
+					PHY_Object[a][PHY_VY] -= PHY_Object[a][PHY_VY] * PHY_Object[a][PHY_AirResistance] * (PHY_TIMER_INTERVAL/1000.0);
+					PHY_Object[a][PHY_VZ] -= PHY_Object[a][PHY_VZ] * PHY_Object[a][PHY_AirResistance] * (PHY_TIMER_INTERVAL/1000.0);
+				}
 				if(PHY_IsObjectRolling(a))
 				    PHY_ApplyRotation(a, speed, moveangle);
 	        }
+	        
+	        PHY_Object[a][PHY_VX] += PHY_Object[a][PHY_AX];
+	        PHY_Object[a][PHY_VY] += PHY_Object[a][PHY_AY];
+	        PHY_Object[a][PHY_VZ] += PHY_Object[a][PHY_AZ];
+	        
 	        SetObjectPos(a, x1, y1, z1);
 	        CallLocalFunction("PHY_OnObjectUpdate", "d", a);
 	    }
@@ -322,7 +338,7 @@ stock PHY_DeleteObject(objectid)
 }
 
 /* Moves the object with vx, vy, vz velocities. */
-stock PHY_MoveObject(objectid, Float:vx, Float:vy, Float:vz = 0.0)
+stock PHY_SetObjectVelocity(objectid, Float:vx, Float:vy, Float:vz = 0.0)
 {
 	if(PHY_Object[objectid][PHY_Properties] & PHY_OBJECT_USED)
 	{
@@ -342,6 +358,32 @@ stock PHY_GetObjectVelocity(objectid, &Float:vx, &Float:vy, &Float:vz)
 	    vx = PHY_Object[objectid][PHY_VX];
 	    vy = PHY_Object[objectid][PHY_VY];
 	    vz = PHY_Object[objectid][PHY_VZ];
+	    return 1;
+	}
+	return 0;
+}
+
+/* Sets the object's acceleration. */
+stock PHY_SetObjectAcceleration(objectid, Float:ax, Float:ay, Float:az = 0.0)
+{
+	if(PHY_Object[objectid][PHY_Properties] & PHY_OBJECT_USED)
+	{
+	    PHY_Object[objectid][PHY_AX] = ax;
+	    PHY_Object[objectid][PHY_AY] = ay;
+	    PHY_Object[objectid][PHY_AZ] = az;
+	    return 1;
+	}
+	return 0;
+}
+
+/* Self-explanatory */
+stock PHY_GetObjectAcceleration(objectid, &Float:ax, &Float:ay, &Float:az)
+{
+	if(PHY_Object[objectid][PHY_Properties] & PHY_OBJECT_USED)
+	{
+	    ax = PHY_Object[objectid][PHY_AX];
+	    ay = PHY_Object[objectid][PHY_AY];
+	    az = PHY_Object[objectid][PHY_AZ];
 	    return 1;
 	}
 	return 0;
@@ -383,12 +425,25 @@ stock PHY_RollObject(objectid, toggle = 1)
 	return 0;
 }
 
-/* Applies friction to the object, that decelerates of 'acceleration' automatically when it moves. */
-stock PHY_SetObjectFriction(objectid, Float:acceleration)
+/* Applies friction to the object when it moves on the floor. */
+stock PHY_SetObjectFriction(objectid, Float:friction)
 {
 	if(PHY_Object[objectid][PHY_Properties] & PHY_OBJECT_USED)
 	{
-	    PHY_Object[objectid][PHY_Friction] = acceleration;
+	    if(0.0 <= friction <= 1.0)
+			PHY_Object[objectid][PHY_Friction] = friction;
+	    return 1;
+	}
+	return 0;
+}
+
+/* Applies air resistance to the object when it moves. */
+stock PHY_SetObjectAirResistance(objectid, Float:resistance)
+{
+	if(PHY_Object[objectid][PHY_Properties] & PHY_OBJECT_USED)
+	{
+	    if(0.0 <= resistance <= 1.0)
+			PHY_Object[objectid][PHY_AirResistance] = resistance;
 	    return 1;
 	}
 	return 0;
@@ -442,7 +497,7 @@ stock PHY_ApplyRotation(objectid, Float:speed, Float:moveangle)
 	new
 	    Float:rx, Float:ry, Float:rz;
     GetObjectRot(objectid, rx, ry, rz);
-	rx -= speed * (float(PHY_TIMER_INTERVAL)/1000.0) * (180.0/3.14159) / PHY_Object[objectid][PHY_Size];
+	rx -= speed * (PHY_TIMER_INTERVAL/1000.0) * (180.0/3.14159) / PHY_Object[objectid][PHY_Size];
 	if(rx < 0.0)
 		rx += 360.0;
 	rz = moveangle;
@@ -506,6 +561,26 @@ stock PHY_SetWallWorld(wallid, world)
 
 
 /* Privates */
+
+stock Float:vectordotp(Float:v1x, Float:v1y, Float:v2x, Float:v2y)
+    return (v1x * v2x + v1y * v2y);
+
+stock check_segment_intersection(Float:x1, Float:y1, Float:x2, Float:y2, Float:xc, Float:yc, Float:r, &Float:x, &Float:y)
+{
+	new Float:v1[2];
+	new Float:v2[2];
+	v1[0] = x2 - x1;
+	v1[1] = y2 - y1;
+	v2[0] = xc - x1;
+	v2[1] = yc - y1;
+	new Float:v1_len = floatsqroot(v1[0] * v1[0] + v1[1] * v1[1]);
+	v1[0] /= v1_len;
+	v1[1] /= v1_len;
+	new Float:proj = vectordotp(v2[0], v2[1], v1[0], v1[1]);
+	x = proj * v1[0] + x1;
+	y = proj * v1[1] + y1;
+    return ((0 - r < proj < v1_len + r) && ((x - xc) * (x - xc) + (y - yc) * (y - yc) < (r * r)));
+}
 
 /* Function to make a better ball rolling, not used because it doesn't work well. */
 stock PHY_Roll(&Float:x, &Float:y, &Float:z, Float:dx, Float:dy, Float:speed)
@@ -634,25 +709,6 @@ stock vectorcrossp(Float:v1x, Float:v1y, Float:v1z, Float:v2x, Float:v2y, Float:
     c3 = (v1x * v2y) - (v1y * v2x);
 }
 
-stock Float:vectordotp(Float:v1x, Float:v1y, Float:v2x, Float:v2y)
-    return (v1x * v2x + v1y * v2y);
-
-stock check_segment_intersection(Float:x1, Float:y1, Float:x2, Float:y2, Float:xc, Float:yc, Float:r, &Float:x, &Float:y)
-{
-	new Float:v1[2];
-	new Float:v2[2];
-	v1[0] = x2 - x1;
-	v1[1] = y2 - y1;
-	v2[0] = xc - x1;
-	v2[1] = yc - y1;
-	new Float:v1_len = floatsqroot(v1[0] * v1[0] + v1[1] * v1[1]);
-	v1[0] /= v1_len;
-	v1[1] /= v1_len;
-	new Float:proj = vectordotp(v2[0], v2[1], v1[0], v1[1]);
-	x = proj * v1[0] + x1;
-	y = proj * v1[1] + y1;
-    return (0 - r < proj < v1_len + r);
-}
 
 #if defined _ALS_OnGameModeInit
     #undef OnGameModeInit

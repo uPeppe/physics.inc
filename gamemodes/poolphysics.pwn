@@ -11,7 +11,7 @@ public OnGameModeInit()
 {
 	SetGameModeText("Objects Physics - Pool Demo");
 	AddPlayerClass(0, 2442.1621,2059.5051,10.8203, 269.1425, 0, 0, 0, 0, 0, 0);
-
+	
 	PoolBall[0] = CreateObject(3003, 510.11218261719, -84.40771484375, 998.86785888672, 0, 0, 0);
     PoolBall[1] = CreateObject(3002, 510.10882568359, -85.166389465332, 998.86749267578, 0, 0, 0);
     PoolBall[2] = CreateObject(3101, 510.14270019531, -85.232612609863, 998.86749267578, 0, 0, 0);
@@ -28,19 +28,19 @@ public OnGameModeInit()
     PoolBall[13] = CreateObject(2999, 510.10900878906, -85.43196105957, 998.86749267578, 0, 0, 0);
     PoolBall[14] = CreateObject(2998, 510.03570556641, -85.432624816895, 998.86749267578, 0, 0, 0);
     PoolBall[15] = CreateObject(3104, 509.96197509766, -85.427406311035, 998.86749267578, 0, 0, 0);
-
+    
     for(new i; i < sizeof PoolBall; i++)
     {
         PHY_InitObject(PoolBall[i], 3003, _, _, PHY_MODE_2D); // Notice that I typed modelid 3003 because all the balls are equal.
         PHY_SetObjectFriction(PoolBall[i], 0.08);
         PHY_RollObject(PoolBall[i]);
 	}
-
+	
 	PHY_CreateWall(509.627 - 0.038, -85.780, 510.598 + 0.038, -85.780);
 	PHY_CreateWall(510.598 + 0.038, -85.780, 510.598 + 0.038, -83.907);
 	PHY_CreateWall(510.598 + 0.038, -83.907, 509.627 - 0.038, -83.907);
 	PHY_CreateWall(509.627 - 0.038, -83.907, 509.627 - 0.038, -85.780);
-
+  
 	return 1;
 }
 
@@ -87,7 +87,7 @@ command(movefirst, playerid, params[])
 	new
 	    Float:speed;
 	if(sscanf(params, "f", speed)) return SendClientMessage(playerid, -1, "Use: /movefirst <speed>");
-    PHY_MoveObject(PoolBall[0], 0.0, -speed);
+    PHY_SetObjectVelocity(PoolBall[0], 0.0, -speed);
 	return 1;
 }
 
@@ -98,6 +98,6 @@ command(move, playerid, params[])
 	    Float:speed,
 		Float:angle;
 	if(sscanf(params, "dff", id, speed, angle)) return SendClientMessage(playerid, -1, "Use: /move <id> <speed> <angle>");
-    PHY_MoveObject(PoolBall[id], speed * floatsin(-angle, degrees), speed * floatcos(-angle, degrees));
+    PHY_SetObjectVelocity(PoolBall[id], speed * floatsin(-angle, degrees), speed * floatcos(-angle, degrees));
 	return 1;
 }

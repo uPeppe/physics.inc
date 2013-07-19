@@ -38,12 +38,14 @@ public OnPlayerCommandText(playerid, cmdtext[])
 		new b = CreateObject(2114, 1954.3783, 1344.0, 15.3746-0.69, 0, 0, 0);
 		PHY_InitObject(a, 1598, 1.4);
 		PHY_InitObject(b, 2114, 1.0);
-		PHY_MoveObject(a, -3.0, 0.0, 5.5);
-		PHY_MoveObject(b, 3.0, 0.0, 5.5);
+		PHY_SetObjectVelocity(a, -4.0, 0.0, 5.5);
+		PHY_SetObjectVelocity(b, 4.0, 0.0, 5.5);
 		PHY_RollObject(a);
 		PHY_RollObject(b);
 		PHY_SetObjectFriction(a, 0.25);
 		PHY_SetObjectFriction(b, 0.25);
+		PHY_SetObjectAirResistance(a, 0.1);
+		PHY_SetObjectAirResistance(b, 0.1);
 		PHY_SetObjectGravity(a, 7.1);
 		PHY_SetObjectGravity(b, 7.1);
 		PHY_SetObjectZBound(a, _, _, 0.5);
@@ -56,12 +58,14 @@ public OnPlayerCommandText(playerid, cmdtext[])
 		new b = CreateObject(2114, 1954.3783, 1344.0, 15.3746-0.69, 0, 0, 0);
 		PHY_InitObject(a, 1598, 1.0, _, PHY_MODE_2D);
 		PHY_InitObject(b, 2114, 1.0, _, PHY_MODE_2D);
-		PHY_MoveObject(a, 3.0, 0.0);
-		PHY_MoveObject(b, 0.0, 3.0);
+		PHY_SetObjectVelocity(a, 4.0, 0.0);
+		PHY_SetObjectVelocity(b, 0.0, 4.0);
 		PHY_RollObject(a);
 		PHY_RollObject(b);
 		PHY_SetObjectFriction(a, 0.25);
 		PHY_SetObjectFriction(b, 0.25);
+		PHY_SetObjectAirResistance(a, 0.1);
+		PHY_SetObjectAirResistance(b, 0.1);
 		return 1;
 	}
 	return 0;
