@@ -308,6 +308,7 @@ stock PHY_InitObject(objectid, modelid = 0, Float:mass = 1.0, Float:size = FLOAT
 	    PHY_Object[objectid][PHY_World] = 0;
 	    PHY_Object[objectid][PHY_VX] = 0;
 	    PHY_Object[objectid][PHY_VY] = 0;
+	    PHY_Object[objectid][PHY_VZ] = 0;
 	    PHY_Object[objectid][PHY_Gravity] = 0;
 	    new
 	        Float:unused;
