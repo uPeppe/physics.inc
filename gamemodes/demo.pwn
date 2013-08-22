@@ -9,10 +9,15 @@ public OnGameModeInit()
 	SetGameModeText("Blank Script");
 	AddPlayerClass(0, 1958.3783, 1343.1572, 15.3746, 269.1425, 0, 0, 0, 0, 0, 0);
 	
-	PHY_CreateWall(1961.4270, 1339.6151, 1961.4269, 1346.3175);
+	/*PHY_CreateWall(1961.4270, 1339.6151, 1961.4269, 1346.3175);
 	PHY_CreateWall(1961.4269, 1346.3175, 1951.4360, 1345.8835);
 	PHY_CreateWall(1951.4360, 1345.8835, 1951.5145, 1340.2163);
-	PHY_CreateWall(1951.5145, 1340.2163, 1961.4270, 1339.6151);
+	PHY_CreateWall(1951.5145, 1340.2163, 1961.4270, 1339.6151);*/
+	PHY_CreateArea(1951.43, 1339.61, 1961.43, 1345.88);
+	
+	CreateObject(1352, 1957.0, 1344.1, 15.3746 - 1.2, 0, 0, 0); // Traffic light
+	PHY_CreateCylinder(1957.0, 1344.1 + 0.13, 0.3);
+	
 	return 1;
 }
 

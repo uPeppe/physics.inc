@@ -18,8 +18,15 @@
 #pragma compress 1
 #include <foreach>
 
-#define PHY_TIMER_INTERVAL (20)
-#define PHY_MAX_WALLS (512)
+#if !defined PHY_TIMER_INTERVAL
+	#define PHY_TIMER_INTERVAL (20)
+#endif
+#if !defined PHY_MAX_WALLS    
+	#define PHY_MAX_WALLS (512)
+#endif
+#if !defined PHY_MAX_CYLINDERS
+	#define PHY_MAX_CYLINDERS (128)
+#endif		
 
 #define PHY_MODE_3D (0)
 #define PHY_MODE_2D (1)
@@ -38,6 +45,7 @@
 forward PHY_OnObjectUpdate(objectid);
 forward PHY_OnObjectCollideWithObject(object1, object2);
 forward PHY_OnObjectCollideWithWall(objectid, wallid);
+forward PHY_OnObjectCollideWithCylinder(objectid, cylinderid);
 
 
 enum (<<= 1)
@@ -47,6 +55,7 @@ enum (<<= 1)
 	PHY_OBJECT_ROLL,
 	PHY_OBJECT_GHOST_OBJECTS,
 	PHY_OBJECT_GHOST_WALLS,
+	PHY_OBJECT_GHOST_CYLINDERS,
 	PHY_OBJECT_GHOST_PLAYERS
 }
 
@@ -85,10 +94,7 @@ enum E_PHY_WALL
 	Float:PHY_Y2,
 	Float:PHY_Z1,
 	Float:PHY_Z2,
-	Float:PHY_WallConst,
-	Float:PHY_A,
-	Float:PHY_B,
-	Float:PHY_C,
+	Float:PHY_BounceConst,
 	Float:PHY_ANG
 }
 
@@ -96,11 +102,29 @@ new
 	PHY_Wall[PHY_MAX_WALLS][E_PHY_WALL],
 	Iterator:ITER_Wall<PHY_MAX_WALLS>;
 
+
+enum E_PHY_CYLINDER
+{
+	PHY_Created,
+	PHY_World,
+	Float:PHY_X,
+	Float:PHY_Y,
+	Float:PHY_Z1,
+	Float:PHY_Z2,
+	Float:PHY_Size,
+	Float:PHY_BounceConst
+}
+
+new
+	PHY_Cylinder[PHY_MAX_CYLINDERS][E_PHY_CYLINDER],
+	Iterator:ITER_Cylinder<PHY_MAX_CYLINDERS>;
+
 /* Macros are self-explanatory */
 #define PHY_IsObjectUsingPhysics(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_USED)
 #define PHY_IsObjectUsing3D(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_MODE)
 #define PHY_IsObjectGhostWithObjects(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_GHOST_OBJECTS)
 #define PHY_IsObjectGhostWithWalls(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_GHOST_WALLS)
+#define PHY_IsObjectGhostWithCylinders(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_GHOST_CYLINDERS)
 #define PHY_IsObjectGhostWithPlayers(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_GHOST_PLAYERS)
 #define PHY_IsObjectMoving(%1) (PHY_Object[%1][PHY_VX] != 0 || PHY_Object[%1][PHY_VY] != 0 || PHY_Object[%1][PHY_VZ] != 0)
 #define PHY_IsObjectRolling(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_ROLL)
@@ -140,9 +164,6 @@ public PHY_CoreTimer()
 		Float:dvx,
 		Float:dvy,
 		Float:mag,
-		/*Float:vxp,
-		Float:vyp,
-		Float:vzp,*/
 		Float:tmpvx1,
 		Float:tmpvx2,
 		Float:newvy1,
@@ -196,7 +217,7 @@ public PHY_CoreTimer()
 					        dz = (PHY_GetObjectMode(a) == PHY_MODE_3D && PHY_GetObjectMode(b) == PHY_MODE_3D) ? (z1 - z2) : (0.0);
 					        dist = (dx * dx) + (dy * dy) + (dz * dz);
 					        maxdist = PHY_Object[a][PHY_Size] + PHY_Object[b][PHY_Size];
-					        if(dist <= (maxdist * maxdist))
+					        if(dist < (maxdist * maxdist))
 					        {
 								dvx = PHY_Object[a][PHY_VX] - PHY_Object[b][PHY_VX];
 		            	        dvy = PHY_Object[a][PHY_VY] - PHY_Object[b][PHY_VX];
@@ -248,7 +269,7 @@ public PHY_CoreTimer()
 								//if((dist >= 0) ? (mag <= 0) : (mag >= 0))
 		       	         		newvx1 = PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees);
 				            	newvy1 = PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees);
-								newvy1 = -newvy1 * PHY_Wall[w][PHY_WallConst];
+								newvy1 = -newvy1 * PHY_Wall[w][PHY_BounceConst];
 								angle = -angle;
         						PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
 		        				PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
@@ -258,6 +279,41 @@ public PHY_CoreTimer()
 								y1 = yclosest + (PHY_Object[a][PHY_Size] + 0.001) * floatsin(angle, degrees);
 								
 	                            CallLocalFunction("PHY_OnObjectCollideWithWall", "dd", a, w);
+					        }
+					    }
+					}
+				}
+				if(!PHY_IsObjectGhostWithCylinders(a))
+				{
+					foreach(ITER_Cylinder, c)
+					{
+					    if((!PHY_Object[a][PHY_World] || !PHY_Cylinder[c][PHY_World] || PHY_Object[a][PHY_World] == PHY_Cylinder[c][PHY_World]))
+					    {
+							if(PHY_Cylinder[c][PHY_Z1] + PHY_Object[a][PHY_Size] < z1 < PHY_Cylinder[c][PHY_Z2] - PHY_Object[a][PHY_Size])
+					        {
+					            x2 = PHY_Cylinder[c][PHY_X];
+					            y2 = PHY_Cylinder[c][PHY_Y];
+						        dx = x1 - x2;
+						        dy = y1 - y2;
+						        dist = (dx * dx) + (dy * dy);
+						        maxdist = PHY_Object[a][PHY_Size] + PHY_Cylinder[c][PHY_Size];
+						        if(dist < (maxdist * maxdist))
+						        {
+			            	        mag = PHY_Object[a][PHY_VX] * dx + PHY_Object[a][PHY_VY] * dy;
+
+			            	        if(mag < 0.0)
+			            	        {
+	                           			angle = -atan2(dy, dx);
+			            	            newvx1 = -PHY_Cylinder[c][PHY_BounceConst] * (PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees));
+			            	            newvy1 = PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees);
+
+										angle = -angle;
+	                                    PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
+			            	            PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
+
+	                                    CallLocalFunction("PHY_OnObjectCollideWithCylinder", "dd", a, c);
+									}
+						        }
 					        }
 					    }
 					}
@@ -527,11 +583,11 @@ stock PHY_CreateWall(Float:x1, Float:y1, Float:x2, Float:y2, Float:constant = 1.
 		    PHY_Wall[i][PHY_Y2] = y2;
 	        PHY_Wall[i][PHY_Z1] = low;
 	        PHY_Wall[i][PHY_Z2] = high;
-	        PHY_Wall[i][PHY_WallConst] = constant;
-	        PHY_Wall[i][PHY_A] = -(y2 - y1);
-			PHY_Wall[i][PHY_B] = (x2 - x1);
-			PHY_Wall[i][PHY_C] = (y2 - y1) * x1 - (x2 - x1) * y1;
+	        PHY_Wall[i][PHY_BounceConst] = constant;
 	        PHY_Wall[i][PHY_ANG] = atan2(y1 - y2, x1 - x2);
+	        /*PHY_Wall[i][PHY_A] = -(y2 - y1);
+			PHY_Wall[i][PHY_B] = (x2 - x1);
+			PHY_Wall[i][PHY_C] = (y2 - y1) * x1 - (x2 - x1) * y1;*/
 			//PHY_Wall[i][PHY_Q] = -((y2 - y1) * x1)/(x2 - x1) + y1;
 			
 			Iter_Add(ITER_Wall, i);
@@ -539,6 +595,15 @@ stock PHY_CreateWall(Float:x1, Float:y1, Float:x2, Float:y2, Float:constant = 1.
 	    }
 	}
 	return -1;
+}
+
+/* Creates four walls that form an area. Works like IsPlayerInArea. */
+stock PHY_CreateArea(Float:minX, Float:minY, Float:maxX, Float:maxY, Float:constant = 1.0, Float:low = FLOAT_NEG_INFINITY, Float:high = FLOAT_INFINITY)
+{
+	PHY_CreateWall(minX, minY, minX, maxY, constant, low, high);
+	PHY_CreateWall(minX, maxY, maxX, maxY, constant, low, high);
+	PHY_CreateWall(maxX, maxY, maxX, minY, constant, low, high);
+	PHY_CreateWall(maxX, minY, minX, minY, constant, low, high);
 }
 
 /* Self-explanatory */
@@ -549,12 +614,59 @@ stock PHY_DestroyWall(wallid)
 	return 1;
 }
 
-/* Se PHY_SetObjectWorld(objectid, world). */
+/* See PHY_SetObjectWorld(objectid, world). */
 stock PHY_SetWallWorld(wallid, world)
 {
 	if(PHY_Wall[wallid][PHY_Created])
 	{
 	    PHY_Wall[wallid][PHY_World] = world;
+	    return 1;
+	}
+	return 0;
+}
+
+/* Creates a collision cylinder at position x, y.
+constant should be from 0.0 to 1.0. If it is 1.0 the object doesn't lose velocity,
+if it is 0.0 the object stops when it collides.
+low is the lowest cylinder's Z, high is the highest. If they're set to default the cylinder is like infinitely high.*/
+stock PHY_CreateCylinder(Float:x, Float:y, Float:size, Float:constant = 1.0, Float:low = FLOAT_NEG_INFINITY, Float:high = FLOAT_INFINITY)
+{
+	new
+		i = Iter_Free(ITER_Cylinder);
+	if(i != -1)
+	{
+	    if(!PHY_Cylinder[i][PHY_Created])
+	    {
+	        PHY_Cylinder[i][PHY_Created] = 1;
+	        PHY_Cylinder[i][PHY_World] = 0;
+			PHY_Cylinder[i][PHY_X] = x;
+		    PHY_Cylinder[i][PHY_Y] = y;
+		    PHY_Cylinder[i][PHY_Size] = size;
+	        PHY_Cylinder[i][PHY_Z1] = low;
+	        PHY_Cylinder[i][PHY_Z2] = high;
+	        PHY_Cylinder[i][PHY_BounceConst] = constant;
+			
+			Iter_Add(ITER_Cylinder, i);
+	        return i;
+	    }
+	}
+	return -1;
+}
+
+/* Self-explanatory */
+stock PHY_DestroyCylinder(cylinderid)
+{
+	PHY_Cylinder[cylinderid][PHY_Created] = 0;
+	Iter_Remove(ITER_Cylinder, cylinderid);
+	return 1;
+}
+
+/* See PHY_SetObjectWorld(objectid, world). */
+stock PHY_SetCylinderWorld(cylinderid, world)
+{
+	if(PHY_Cylinder[cylinderid][PHY_Created])
+	{
+	    PHY_Cylinder[cylinderid][PHY_World] = world;
 	    return 1;
 	}
 	return 0;
