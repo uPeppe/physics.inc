@@ -487,8 +487,8 @@ stock PHY_SetObjectFriction(objectid, Float:friction)
 {
 	if(PHY_Object[objectid][PHY_Properties] & PHY_OBJECT_USED)
 	{
-	    if(0.0 <= friction <= 1.0)
-			PHY_Object[objectid][PHY_Friction] = friction;
+	    if(friction >= 0.0)
+	    	PHY_Object[objectid][PHY_Friction] = friction;
 	    return 1;
 	}
 	return 0;
