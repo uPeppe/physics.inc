@@ -257,65 +257,75 @@ public PHY_CoreTimer()
 				{
 					foreach(ITER_Wall, w)
 					{
-					    if((!PHY_Object[a][PHY_World] || !PHY_Wall[w][PHY_World] || PHY_Object[a][PHY_World] == PHY_Wall[w][PHY_World]))
-					    {
-					        //dist = (y1 - PHY_Wall[w][PHY_M] * x1 - PHY_Wall[w][PHY_Q])/floatsqroot(1 + PHY_Wall[w][PHY_M] * PHY_Wall[w][PHY_M]);
-							//dist = (PHY_Wall[w][PHY_A] * x1 + PHY_Wall[w][PHY_B] * y1 + PHY_Wall[w][PHY_C])/floatsqroot(PHY_Wall[w][PHY_A] * PHY_Wall[w][PHY_A] + PHY_Wall[w][PHY_B] * PHY_Wall[w][PHY_B]);
-							angle = PHY_Wall[w][PHY_ANG];
-							if(PHY_Wall[w][PHY_Z1] + PHY_Object[a][PHY_Size] < z1 < PHY_Wall[w][PHY_Z2] - PHY_Object[a][PHY_Size] && check_segment_intersection(PHY_Wall[w][PHY_X1], PHY_Wall[w][PHY_Y1], PHY_Wall[w][PHY_X2], PHY_Wall[w][PHY_Y2], x1, y1, PHY_Object[a][PHY_Size], xclosest, yclosest) /* && floatabs(dist) < PHY_Object[a][PHY_Size]*/)
-					        {
-					            //mag = y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees) - (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) * PHY_Wall[w][PHY_M] - PHY_Wall[w][PHY_Q];
-								//mag = PHY_Wall[w][PHY_A] * (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) + PHY_Wall[w][PHY_B] * (y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees)) + PHY_Wall[w][PHY_C];
-								//if((dist >= 0) ? (mag <= 0) : (mag >= 0))
-		       	         		newvx1 = PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees);
-				            	newvy1 = PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees);
-								newvy1 = -newvy1 * PHY_Wall[w][PHY_BounceConst];
-								angle = -angle;
-        						PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
-		        				PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
-								
-								angle = angle + (newvy1 > 0 ? 90.0 : -90.0);
-								x1 = xclosest + (PHY_Object[a][PHY_Size] + 0.001) * floatcos(angle, degrees);
-								y1 = yclosest + (PHY_Object[a][PHY_Size] + 0.001) * floatsin(angle, degrees);
-								
-	                            CallLocalFunction("PHY_OnObjectCollideWithWall", "dd", a, w);
-					        }
+						if(PHY_Wall[w][PHY_Created])
+						{
+						    if((!PHY_Object[a][PHY_World] || !PHY_Wall[w][PHY_World] || PHY_Object[a][PHY_World] == PHY_Wall[w][PHY_World]))
+						    {
+						        //dist = (y1 - PHY_Wall[w][PHY_M] * x1 - PHY_Wall[w][PHY_Q])/floatsqroot(1 + PHY_Wall[w][PHY_M] * PHY_Wall[w][PHY_M]);
+								//dist = (PHY_Wall[w][PHY_A] * x1 + PHY_Wall[w][PHY_B] * y1 + PHY_Wall[w][PHY_C])/floatsqroot(PHY_Wall[w][PHY_A] * PHY_Wall[w][PHY_A] + PHY_Wall[w][PHY_B] * PHY_Wall[w][PHY_B]);
+								angle = PHY_Wall[w][PHY_ANG];
+								if(PHY_Wall[w][PHY_Z1] + PHY_Object[a][PHY_Size] < z1 < PHY_Wall[w][PHY_Z2] - PHY_Object[a][PHY_Size] && check_segment_intersection(PHY_Wall[w][PHY_X1], PHY_Wall[w][PHY_Y1], PHY_Wall[w][PHY_X2], PHY_Wall[w][PHY_Y2], x1, y1, PHY_Object[a][PHY_Size], xclosest, yclosest) /* && floatabs(dist) < PHY_Object[a][PHY_Size]*/)
+						        {
+						            //mag = y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees) - (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) * PHY_Wall[w][PHY_M] - PHY_Wall[w][PHY_Q];
+									//mag = PHY_Wall[w][PHY_A] * (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) + PHY_Wall[w][PHY_B] * (y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees)) + PHY_Wall[w][PHY_C];
+									//if((dist >= 0) ? (mag <= 0) : (mag >= 0))
+			       	         		newvx1 = PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees);
+					            	newvy1 = PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees);
+									newvy1 = -newvy1 * PHY_Wall[w][PHY_BounceConst];
+									angle = -angle;
+	        						PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
+			        				PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
+
+									angle = angle + (newvy1 > 0 ? 90.0 : -90.0);
+									x1 = xclosest + (PHY_Object[a][PHY_Size] + 0.001) * floatcos(angle, degrees);
+									y1 = yclosest + (PHY_Object[a][PHY_Size] + 0.001) * floatsin(angle, degrees);
+
+		                            CallLocalFunction("PHY_OnObjectCollideWithWall", "dd", a, w);
+						        }
+						    }
 					    }
+					    else
+					        Iter_SafeRemove(ITER_Wall, w, w);
 					}
 				}
 				if(!PHY_IsObjectGhostWithCylinders(a))
 				{
 					foreach(ITER_Cylinder, c)
 					{
-					    if((!PHY_Object[a][PHY_World] || !PHY_Cylinder[c][PHY_World] || PHY_Object[a][PHY_World] == PHY_Cylinder[c][PHY_World]))
-					    {
-							if(PHY_Cylinder[c][PHY_Z1] + PHY_Object[a][PHY_Size] < z1 < PHY_Cylinder[c][PHY_Z2] - PHY_Object[a][PHY_Size])
-					        {
-					            x2 = PHY_Cylinder[c][PHY_X];
-					            y2 = PHY_Cylinder[c][PHY_Y];
-						        dx = x1 - x2;
-						        dy = y1 - y2;
-						        dist = (dx * dx) + (dy * dy);
-						        maxdist = PHY_Object[a][PHY_Size] + PHY_Cylinder[c][PHY_Size];
-						        if(dist < (maxdist * maxdist))
+					    if(PHY_Cylinder[c][PHY_Created])
+						{
+						    if((!PHY_Object[a][PHY_World] || !PHY_Cylinder[c][PHY_World] || PHY_Object[a][PHY_World] == PHY_Cylinder[c][PHY_World]))
+						    {
+								if(PHY_Cylinder[c][PHY_Z1] + PHY_Object[a][PHY_Size] < z1 < PHY_Cylinder[c][PHY_Z2] - PHY_Object[a][PHY_Size])
 						        {
-			            	        mag = PHY_Object[a][PHY_VX] * dx + PHY_Object[a][PHY_VY] * dy;
+						            x2 = PHY_Cylinder[c][PHY_X];
+						            y2 = PHY_Cylinder[c][PHY_Y];
+							        dx = x1 - x2;
+							        dy = y1 - y2;
+							        dist = (dx * dx) + (dy * dy);
+							        maxdist = PHY_Object[a][PHY_Size] + PHY_Cylinder[c][PHY_Size];
+							        if(dist < (maxdist * maxdist))
+							        {
+				            	        mag = PHY_Object[a][PHY_VX] * dx + PHY_Object[a][PHY_VY] * dy;
 
-			            	        if(mag < 0.0)
-			            	        {
-	                           			angle = -atan2(dy, dx);
-			            	            newvx1 = -PHY_Cylinder[c][PHY_BounceConst] * (PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees));
-			            	            newvy1 = PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees);
+				            	        if(mag < 0.0)
+				            	        {
+		                           			angle = -atan2(dy, dx);
+				            	            newvx1 = -PHY_Cylinder[c][PHY_BounceConst] * (PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees));
+				            	            newvy1 = PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees);
 
-										angle = -angle;
-	                                    PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
-			            	            PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
+											angle = -angle;
+		                                    PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
+				            	            PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
 
-	                                    CallLocalFunction("PHY_OnObjectCollideWithCylinder", "dd", a, c);
-									}
+		                                    CallLocalFunction("PHY_OnObjectCollideWithCylinder", "dd", a, c);
+										}
+							        }
 						        }
-					        }
+						    }
 					    }
+					    else
+					        Iter_SafeRemove(ITER_Cylinder, c, c);
 					}
 				}
 				moveangle = atan2(PHY_Object[a][PHY_VY], PHY_Object[a][PHY_VX]) - 90.0;
@@ -334,7 +344,7 @@ public PHY_CoreTimer()
 					PHY_Object[a][PHY_VY] -= PHY_Object[a][PHY_VY] * PHY_Object[a][PHY_AirResistance] * (PHY_TIMER_INTERVAL/1000.0);
 					PHY_Object[a][PHY_VZ] -= PHY_Object[a][PHY_VZ] * PHY_Object[a][PHY_AirResistance] * (PHY_TIMER_INTERVAL/1000.0);
 				}
-				if(PHY_IsObjectRolling(a))
+				if(PHY_IsObjectRolling(a) && speed > 0.0)
 				    PHY_ApplyRotation(a, speed, moveangle);
 	        }
 	        
@@ -345,6 +355,8 @@ public PHY_CoreTimer()
 	        SetObjectPos(a, x1, y1, z1);
 	        CallLocalFunction("PHY_OnObjectUpdate", "d", a);
 	    }
+	    else
+	        Iter_SafeRemove(ITER_Object, a, a);
 	}
 	return 1;
 }
@@ -390,7 +402,7 @@ stock PHY_InitObject(objectid, modelid = 0, Float:mass = 1.0, Float:size = FLOAT
 stock PHY_DeleteObject(objectid)
 {
 	PHY_Object[objectid][PHY_Properties] = 0;
-	Iter_Remove(ITER_Object, objectid);
+	// Iter_Remove(ITER_Object, objectid);
 	return 1;
 }
 
@@ -610,7 +622,7 @@ stock PHY_CreateArea(Float:minX, Float:minY, Float:maxX, Float:maxY, Float:const
 stock PHY_DestroyWall(wallid)
 {
 	PHY_Wall[wallid][PHY_Created] = 0;
-	Iter_Remove(ITER_Wall, wallid);
+	// Iter_Remove(ITER_Wall, wallid);
 	return 1;
 }
 
@@ -657,7 +669,7 @@ stock PHY_CreateCylinder(Float:x, Float:y, Float:size, Float:constant = 1.0, Flo
 stock PHY_DestroyCylinder(cylinderid)
 {
 	PHY_Cylinder[cylinderid][PHY_Created] = 0;
-	Iter_Remove(ITER_Cylinder, cylinderid);
+	// Iter_Remove(ITER_Cylinder, cylinderid);
 	return 1;
 }
 
