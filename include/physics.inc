@@ -145,6 +145,9 @@ forward PHY_CoreTimer();
 public PHY_CoreTimer()
 {
 	new
+	    Float:x,
+	    Float:y,
+	    Float:z,
 		Float:x1,
 	    Float:y1,
 	    Float:z1,
@@ -174,12 +177,12 @@ public PHY_CoreTimer()
 	{
 	    if(PHY_Object[a][PHY_Properties] & PHY_OBJECT_USED)
 	    {
-            GetObjectPos(a, x1, y1, z1);
-            x1 += PHY_Object[a][PHY_VX] * (PHY_TIMER_INTERVAL/1000.0);
-			y1 += PHY_Object[a][PHY_VY] * (PHY_TIMER_INTERVAL/1000.0);
+            GetObjectPos(a, x, y, z);
+            x1 = x + PHY_Object[a][PHY_VX] * (PHY_TIMER_INTERVAL/1000.0);
+			y1 = y + PHY_Object[a][PHY_VY] * (PHY_TIMER_INTERVAL/1000.0);
 			if(PHY_GetObjectMode(a) == PHY_MODE_3D)
 			{
-			    z1 += PHY_Object[a][PHY_VZ] * (PHY_TIMER_INTERVAL/1000.0);
+			    z1 = z + PHY_Object[a][PHY_VZ] * (PHY_TIMER_INTERVAL/1000.0);
 			    
 				if(z1 > PHY_Object[a][PHY_HighZBound] && PHY_Object[a][PHY_VZ] > 0)
 				{
@@ -203,6 +206,8 @@ public PHY_CoreTimer()
 						PHY_Object[a][PHY_VZ] -= PHY_Object[a][PHY_Gravity] * (PHY_TIMER_INTERVAL/1000.0);
 				}
 			}
+			else
+			    z1 = z;
 			if(PHY_IsObjectMoving(a))
 	        {
 				if(!PHY_IsObjectGhostWithObjects(a))
@@ -264,14 +269,15 @@ public PHY_CoreTimer()
 						        //dist = (y1 - PHY_Wall[w][PHY_M] * x1 - PHY_Wall[w][PHY_Q])/floatsqroot(1 + PHY_Wall[w][PHY_M] * PHY_Wall[w][PHY_M]);
 								//dist = (PHY_Wall[w][PHY_A] * x1 + PHY_Wall[w][PHY_B] * y1 + PHY_Wall[w][PHY_C])/floatsqroot(PHY_Wall[w][PHY_A] * PHY_Wall[w][PHY_A] + PHY_Wall[w][PHY_B] * PHY_Wall[w][PHY_B]);
 								angle = PHY_Wall[w][PHY_ANG];
-								if(PHY_Wall[w][PHY_Z1] + PHY_Object[a][PHY_Size] < z1 < PHY_Wall[w][PHY_Z2] - PHY_Object[a][PHY_Size] && check_segment_intersection(PHY_Wall[w][PHY_X1], PHY_Wall[w][PHY_Y1], PHY_Wall[w][PHY_X2], PHY_Wall[w][PHY_Y2], x1, y1, PHY_Object[a][PHY_Size], xclosest, yclosest) /* && floatabs(dist) < PHY_Object[a][PHY_Size]*/)
-						        {
+								if(PHY_Wall[w][PHY_Z1] + PHY_Object[a][PHY_Size] < z1 < PHY_Wall[w][PHY_Z2] - PHY_Object[a][PHY_Size] &&
+								(check_segment_intersection(PHY_Wall[w][PHY_X1], PHY_Wall[w][PHY_Y1], PHY_Wall[w][PHY_X2], PHY_Wall[w][PHY_Y2], x1, y1, PHY_Object[a][PHY_Size], xclosest, yclosest) || /* && floatabs(dist) < PHY_Object[a][PHY_Size]*/
+                                check_segment_intersection(PHY_Wall[w][PHY_X1], PHY_Wall[w][PHY_Y1], PHY_Wall[w][PHY_X2], PHY_Wall[w][PHY_Y2], (x + x1)/2, (y + y1)/2, PHY_Object[a][PHY_Size], xclosest, yclosest)))
+								{
 						            //mag = y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees) - (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) * PHY_Wall[w][PHY_M] - PHY_Wall[w][PHY_Q];
 									//mag = PHY_Wall[w][PHY_A] * (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) + PHY_Wall[w][PHY_B] * (y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees)) + PHY_Wall[w][PHY_C];
 									//if((dist >= 0) ? (mag <= 0) : (mag >= 0))
-			       	         		newvx1 = PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees);
-					            	newvy1 = PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees);
-									newvy1 = -newvy1 * PHY_Wall[w][PHY_BounceConst];
+			       	         		newvx1 = PHY_Wall[w][PHY_BounceConst] * (PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees));
+					            	newvy1 = -PHY_Wall[w][PHY_BounceConst] * (PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees));
 									angle = -angle;
 	        						PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
 			        				PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
@@ -312,7 +318,7 @@ public PHY_CoreTimer()
 				            	        {
 		                           			angle = -atan2(dy, dx);
 				            	            newvx1 = -PHY_Cylinder[c][PHY_BounceConst] * (PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees));
-				            	            newvy1 = PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees);
+				            	            newvy1 = PHY_Cylinder[c][PHY_BounceConst] * (PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees));
 
 											angle = -angle;
 		                                    PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
