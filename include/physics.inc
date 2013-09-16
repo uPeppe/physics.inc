@@ -25,7 +25,7 @@
 	#define PHY_MAX_WALLS (512)
 #endif
 #if !defined PHY_MAX_CYLINDERS
-	#define PHY_MAX_CYLINDERS (128)
+	#define PHY_MAX_CYLINDERS (512)
 #endif		
 
 #define PHY_MODE_3D (0)
@@ -46,6 +46,7 @@ forward PHY_OnObjectUpdate(objectid);
 forward PHY_OnObjectCollideWithObject(object1, object2);
 forward PHY_OnObjectCollideWithWall(objectid, wallid);
 forward PHY_OnObjectCollideWithCylinder(objectid, cylinderid);
+forward PHY_OnObjectCollideWithPlayer(objectid, playerid);
 
 
 enum (<<= 1)
@@ -56,7 +57,7 @@ enum (<<= 1)
 	PHY_OBJECT_GHOST_OBJECTS,
 	PHY_OBJECT_GHOST_WALLS,
 	PHY_OBJECT_GHOST_CYLINDERS,
-	PHY_OBJECT_GHOST_PLAYERS
+	PHY_OBJECT_PLAYER_COLLISIONS
 }
 
 enum E_PHY_OBJECT
@@ -76,7 +77,11 @@ enum E_PHY_OBJECT
 	Float:PHY_Gravity,
 	Float:PHY_LowZBound,
 	Float:PHY_HighZBound,
-	Float:PHY_BoundConst
+	Float:PHY_BoundConst,
+	Float:PHY_PlayerConst,
+	Float:PHY_PlayerDist,
+	Float:PHY_PlayerLowZ,
+	Float:PHY_PlayerHighZ
 }
 
 new
@@ -119,13 +124,23 @@ new
 	PHY_Cylinder[PHY_MAX_CYLINDERS][E_PHY_CYLINDER],
 	Iterator:ITER_Cylinder<PHY_MAX_CYLINDERS>;
 
+
+enum E_PHY_PLAYER
+{
+	PHY_World
+}
+
+new
+	PHY_Player[MAX_PLAYERS][E_PHY_PLAYER];
+	
+
 /* Macros are self-explanatory */
 #define PHY_IsObjectUsingPhysics(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_USED)
 #define PHY_IsObjectUsing3D(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_MODE)
 #define PHY_IsObjectGhostWithObjects(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_GHOST_OBJECTS)
 #define PHY_IsObjectGhostWithWalls(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_GHOST_WALLS)
 #define PHY_IsObjectGhostWithCylinders(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_GHOST_CYLINDERS)
-#define PHY_IsObjectGhostWithPlayers(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_GHOST_PLAYERS)
+#define PHY_IsObjectCollidingWithPlayers(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_PLAYER_COLLISIONS)
 #define PHY_IsObjectMoving(%1) (PHY_Object[%1][PHY_VX] != 0 || PHY_Object[%1][PHY_VY] != 0 || PHY_Object[%1][PHY_VZ] != 0)
 #define PHY_IsObjectRolling(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_ROLL)
 #define PHY_GetObjectFriction(%1) (PHY_Object[%1][PHY_Friction])
@@ -133,11 +148,26 @@ new
 #define PHY_GetObjectGravity(%1) (PHY_Object[%1][PHY_Gravity])
 #define PHY_GetObjectMode(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_MODE)
 
+
+static
+	cb_Connect;
+
 public OnGameModeInit()
 {
 	SetTimer("PHY_CoreTimer", PHY_TIMER_INTERVAL, true);
-	
-	CallLocalFunction("PHY_OnGameModeInit", "");
+
+	cb_Connect = funcidx("PHY_OnPlayerConnect") != -1;
+	if(funcidx("PHY_OnGameModeInit") != -1)
+		return CallLocalFunction("PHY_OnGameModeInit", "");
+	return 1;
+}
+
+public OnPlayerConnect(playerid)
+{
+	PHY_Player[playerid][PHY_World] = 0;
+
+	if(cb_Connect)
+    	return CallLocalFunction("PHY_OnPlayerConnect", "i", playerid);
 	return 1;
 }
 
@@ -184,14 +214,16 @@ public PHY_CoreTimer()
 			{
 			    z1 = z + PHY_Object[a][PHY_VZ] * (PHY_TIMER_INTERVAL/1000.0);
 			    
-				if(z1 > PHY_Object[a][PHY_HighZBound] && PHY_Object[a][PHY_VZ] > 0)
+				if(z1 > PHY_Object[a][PHY_HighZBound])
 				{
-					PHY_Object[a][PHY_VZ] = -PHY_Object[a][PHY_VZ] * PHY_Object[a][PHY_BoundConst];
+				    if(PHY_Object[a][PHY_VZ] > 0)
+						PHY_Object[a][PHY_VZ] = -PHY_Object[a][PHY_VZ] * PHY_Object[a][PHY_BoundConst];
 					z1 = PHY_Object[a][PHY_HighZBound];
 				}
-				else if(z1 < PHY_Object[a][PHY_LowZBound] && PHY_Object[a][PHY_VZ] < 0)
+				else if(z1 < PHY_Object[a][PHY_LowZBound])
 				{
-					PHY_Object[a][PHY_VZ] = -PHY_Object[a][PHY_VZ] * PHY_Object[a][PHY_BoundConst];
+				    if(PHY_Object[a][PHY_VZ] < 0)
+						PHY_Object[a][PHY_VZ] = -PHY_Object[a][PHY_VZ] * PHY_Object[a][PHY_BoundConst];
 					z1 = PHY_Object[a][PHY_LowZBound];
 				}
 				if(PHY_GetObjectGravity(a) != 0)
@@ -269,7 +301,7 @@ public PHY_CoreTimer()
 						        //dist = (y1 - PHY_Wall[w][PHY_M] * x1 - PHY_Wall[w][PHY_Q])/floatsqroot(1 + PHY_Wall[w][PHY_M] * PHY_Wall[w][PHY_M]);
 								//dist = (PHY_Wall[w][PHY_A] * x1 + PHY_Wall[w][PHY_B] * y1 + PHY_Wall[w][PHY_C])/floatsqroot(PHY_Wall[w][PHY_A] * PHY_Wall[w][PHY_A] + PHY_Wall[w][PHY_B] * PHY_Wall[w][PHY_B]);
 								angle = PHY_Wall[w][PHY_ANG];
-								if(PHY_Wall[w][PHY_Z1] + PHY_Object[a][PHY_Size] < z1 < PHY_Wall[w][PHY_Z2] - PHY_Object[a][PHY_Size] &&
+								if(PHY_Wall[w][PHY_Z1] - PHY_Object[a][PHY_Size] < z1 < PHY_Wall[w][PHY_Z2] + PHY_Object[a][PHY_Size] &&
 								(check_segment_intersection(PHY_Wall[w][PHY_X1], PHY_Wall[w][PHY_Y1], PHY_Wall[w][PHY_X2], PHY_Wall[w][PHY_Y2], x1, y1, PHY_Object[a][PHY_Size], xclosest, yclosest) || /* && floatabs(dist) < PHY_Object[a][PHY_Size]*/
                                 check_segment_intersection(PHY_Wall[w][PHY_X1], PHY_Wall[w][PHY_Y1], PHY_Wall[w][PHY_X2], PHY_Wall[w][PHY_Y2], (x + x1)/2, (y + y1)/2, PHY_Object[a][PHY_Size], xclosest, yclosest)))
 								{
@@ -302,7 +334,7 @@ public PHY_CoreTimer()
 						{
 						    if((!PHY_Object[a][PHY_World] || !PHY_Cylinder[c][PHY_World] || PHY_Object[a][PHY_World] == PHY_Cylinder[c][PHY_World]))
 						    {
-								if(PHY_Cylinder[c][PHY_Z1] + PHY_Object[a][PHY_Size] < z1 < PHY_Cylinder[c][PHY_Z2] - PHY_Object[a][PHY_Size])
+								if(PHY_Cylinder[c][PHY_Z1] - PHY_Object[a][PHY_Size] < z1 < PHY_Cylinder[c][PHY_Z2] + PHY_Object[a][PHY_Size])
 						        {
 						            x2 = PHY_Cylinder[c][PHY_X];
 						            y2 = PHY_Cylinder[c][PHY_Y];
@@ -332,6 +364,41 @@ public PHY_CoreTimer()
 					    }
 					    else
 					        Iter_SafeRemove(ITER_Cylinder, c, c);
+					}
+				}
+				if(PHY_IsObjectCollidingWithPlayers(a))
+				{
+					foreach(Player, i)
+					{
+						if((!PHY_Object[a][PHY_World] || !PHY_Player[i][PHY_World] || PHY_Object[a][PHY_World] == PHY_Player[i][PHY_World]))
+						{
+						    GetPlayerPos(i, x2, y2, z2);
+						        
+							if(z2 - PHY_Object[a][PHY_PlayerLowZ] - PHY_Object[a][PHY_Size] < z1 < z2 + PHY_Object[a][PHY_PlayerHighZ] + PHY_Object[a][PHY_Size])
+						    {
+								dx = x1 - x2;
+							    dy = y1 - y2;
+							    dist = (dx * dx) + (dy * dy);
+							    maxdist = PHY_Object[a][PHY_Size] + PHY_Object[a][PHY_PlayerDist];
+							    if(dist < (maxdist * maxdist))
+							    {
+				            	    mag = PHY_Object[a][PHY_VX] * dx + PHY_Object[a][PHY_VY] * dy;
+
+			            	        if(mag < 0.0)
+			            	        {
+		                       			angle = -atan2(dy, dx);
+			            	            newvx1 = -PHY_Object[a][PHY_PlayerConst] * (PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees));
+			            	            newvy1 = PHY_Object[a][PHY_PlayerConst] * (PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees));
+
+										angle = -angle;
+	                                    PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
+			            	            PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
+
+	                                    CallLocalFunction("PHY_OnObjectCollideWithPlayer", "dd", a, i);
+									}
+						        }
+						    }
+					    }
 					}
 				}
 				moveangle = atan2(PHY_Object[a][PHY_VY], PHY_Object[a][PHY_VX]) - 90.0;
@@ -566,6 +633,30 @@ stock PHY_SetObjectWorld(objectid, world)
 	return 0;
 }
 
+/* Toggles object's collisions with players.
+- constant - It should be from 0.0 to 1.0. If it is 1.0 the object doesn't lose velocity,
+if it is 0.0 the object stops when it bounces. It could be a middle ground.
+- distoffset - The distance at which the object collides with the player.
+- zoffsetlow/zoffsethigh - The max Z distance (downward/upward) at which the object collides with the player. */
+stock PHY_ToggleObjectPlayerColls(objectid, toggle = 1, Float:constant = 1.0, Float:distoffset = 0.8, Float:zoffsetlow = 1.0, Float:zoffsethigh = 1.0)
+{
+	if(PHY_Object[objectid][PHY_Properties] & PHY_OBJECT_USED)
+	{
+	    if(toggle)
+	    {
+	        PHY_Object[objectid][PHY_Properties] |= PHY_OBJECT_PLAYER_COLLISIONS;
+	        PHY_Object[objectid][PHY_PlayerConst] = constant;
+	        PHY_Object[objectid][PHY_PlayerDist] = distoffset;
+	        PHY_Object[objectid][PHY_PlayerLowZ] = zoffsetlow;
+	        PHY_Object[objectid][PHY_PlayerHighZ] = zoffsethigh;
+	    }
+	    else
+	        PHY_Object[objectid][PHY_Properties] &= ~PHY_OBJECT_PLAYER_COLLISIONS;
+	    return 1;
+	}
+	return 0;
+}
+
 /* Used internally to rotate the objects */
 stock PHY_ApplyRotation(objectid, Float:speed, Float:moveangle)
 {
@@ -690,6 +781,12 @@ stock PHY_SetCylinderWorld(cylinderid, world)
 	return 0;
 }
 
+/* See PHY_SetObjectWorld(objectid, world). */
+stock PHY_SetPlayerWorld(playerid, world)
+{
+	PHY_Player[playerid][PHY_World] = world;
+	return 1;
+}
 
 /* Privates */
 
@@ -849,3 +946,13 @@ stock vectorcrossp(Float:v1x, Float:v1y, Float:v1z, Float:v2x, Float:v2y, Float:
 #define OnGameModeInit PHY_OnGameModeInit
 
 forward OnGameModeInit();
+
+
+#if defined _ALS_OnPlayerConnect
+    #undef OnPlayerConnect
+#else
+    #define _ALS_OnPlayerConnect
+#endif
+#define OnPlayerConnect PHY_OnPlayerConnect
+
+forward OnPlayerConnect(playerid);

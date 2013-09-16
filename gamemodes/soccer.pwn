@@ -2,7 +2,14 @@
 #include <physics>
 
 stock const
-	Float:BallSpawn[3] = {2706.9944, -1802.1829, 422.8372};
+	Float:BallSpawn[3] = {2706.9944, -1802.1829, 422.8372},
+	Float:Corners[4][3] = {
+		{2677.1453, -1748.0548, 422.8372},
+		{2736.6797, -1747.9595, 422.8372},
+		{2736.7180, -1856.2570, 422.8372},
+		{2677.3398, -1856.5066, 422.8372}
+	};
+	
 
 new
 	Ball = -1,
@@ -64,7 +71,7 @@ public OnPlayerConnect(playerid)
 public OnPlayerDisconnect(playerid, reason)
 {
     if(BallHolder == playerid)
-	    RecreateBall();
+	     RecreateBall();
     return 1;
 }
 
@@ -74,6 +81,9 @@ public OnPlayerSpawn(playerid)
 	    RecreateBall();
 	    
 	SetPlayerPos(playerid, BallSpawn[0] + random(5), BallSpawn[1] + random(5), BallSpawn[2]);
+	
+	ApplyAnimation(playerid, "WAYFARER", "null", 0.0, 0, 0, 0, 0, 0); // Preloads anim lib
+	ApplyAnimation(playerid, "FIGHT_D", "null", 0.0, 0, 0, 0, 0, 0); // Preloads anim lib
     return 1;
 }
 
@@ -304,6 +314,7 @@ stock CreateBall()
 	PHY_SetObjectAirResistance(Ball, 0.2);
 	PHY_SetObjectGravity(Ball, 10.0);
 	PHY_SetObjectZBound(Ball, _, _, 0.5);
+	PHY_ToggleObjectPlayerColls(Ball, 1, 0.6);
 }
 
 stock DestroyBall()
@@ -346,7 +357,7 @@ stock LoadCollisions()
 	PHY_CreateWall(2711.87, -1862.75, 2701.92, -1862.75, 0.5, _, 425.87);
 	PHY_CreateWall(2701.92, -1862.75, 2701.92, -1857.30, 0.5, _, 425.87);
 	// Crossbar
-	PHY_CreateWall(2701.92, -1857.30, 2711.87, -1857.30, _, 425.2, 425.9);
+	PHY_CreateWall(2701.92, -1857.30, 2711.87, -1857.30, _, 425.87 - 0.1, 425.87 + 0.1);
 	// Pole
 	PHY_CreateCylinder(2711.87, -1857.30, 0.3, _, _, 425.87);
 	PHY_CreateCylinder(2701.92, -1857.30, 0.3, _, _, 425.87);
@@ -356,7 +367,7 @@ stock LoadCollisions()
 	PHY_CreateWall(2701.92, -1741.60, 2711.89, -1741.60, 0.5, _, 425.87);
 	PHY_CreateWall(2711.89, -1741.60, 2711.89, -1747.10, 0.5, _, 425.87);
 	// Crossbar
-	PHY_CreateWall(2711.89, -1747.10, 2701.92, -1747.10, _, 425.2, 425.9);
+	PHY_CreateWall(2711.89, -1747.10, 2701.92, -1747.10, _, 425.87 - 0.1, 425.87 + 0.1);
 	// Pole
 	PHY_CreateCylinder(2701.92, -1747.10, 0.3, _, _, 425.87);
 	PHY_CreateCylinder(2711.89, -1747.10, 0.3, _, _, 425.87);
@@ -380,10 +391,26 @@ public PHY_OnObjectUpdate(objectid)
 	}
 	else if((2701.92 < x < 2711.87 && -1862.75 < y < -1857.30 && (goal = 1)) || (2701.92 < x < 2711.89 && -1747.10 < y < -1741.60 && (goal = 2)))
 	{
-	    if(z > 425.87)
+	    PHY_SetObjectZBound(Ball, _, 425.6 , 0.5);
+
+	    if(z > 425.6)
 	    {
 	        RecreateBall();
 	        SendClientMessageToAll(-1, "The ball has been respawned.");
+	        new
+	            Float:mindist = FLOAT_INFINITY,
+	            Float:dist,
+	            closest;
+	        for(new i; i < sizeof Corners; i++)
+	        {
+	            dist = (x - Corners[i][0]) * (x - Corners[i][0]) + (y - Corners[i][1]) * (y - Corners[i][1]);
+				if(dist < mindist)
+				{
+				    mindist = dist;
+				    closest = i;
+				}
+	        }
+	        SetObjectPos(Ball, Corners[closest][0], Corners[closest][1], Corners[closest][2]);
 	    }
 	    else if(!Goal)
 	    {
@@ -392,11 +419,11 @@ public PHY_OnObjectUpdate(objectid)
 				name[MAX_PLAYER_NAME];
 			
 	        Goal = 1;
-	        PHY_SetObjectZBound(Ball, _, 425.8, 0.5);
 	        
 	        GetPlayerName(LastTouch, name, sizeof name);
-	        format(string, sizeof string, "%s has scored a goal [%d].", name, goal);
+	        format(string, sizeof string, "%s has scored a goal.", name);
 	        SendClientMessageToAll(-1, string);
+	        #pragma unused goal
 	    }
 	}
 	else if(Goal)
