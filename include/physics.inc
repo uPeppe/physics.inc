@@ -54,6 +54,13 @@ forward PHY_OnObjectCollideWithObject(object1, object2);
 forward PHY_OnObjectCollideWithWall(objectid, wallid);
 forward PHY_OnObjectCollideWithCylinder(objectid, cylinderid);
 forward PHY_OnObjectCollideWithPlayer(objectid, playerid);
+forward OnD_ObjectCollideWithD_Object(object1, object2); // Due to max symbol name, I was forced to...well, you've seen it. Feel free to rename the callback, its name is very ugly. Fired each time a dynamic object collides with another dynamic object
+forward OnDynamicObjectCollideWithObject(object1, object2); // Fired each time a dynamic object collides with a static object
+forward OnObjectCollideWithDynamicObject(object1, object2); // Fired each time an object collides with a dynamic object 
+forward PHY_OnDynamicObjectCollideWithWall(objectid, wallid); // Fired each time a dynamic object collides with a wall
+forward PHY_OnDynamicObjectCollideWithCyl(objectid, cylinderid); // Fired each time a dynamic object collides with a cylinder
+forward PHY_OnDynamicObjectCollideWithPlayer(objectid, playerid); // Fired each time a dynamic object collides with a player
+forward PHY_OnDynamicObjectUpdate(objectid); // Fired each time the core timer loop have looped on a dynamic object contained in the iterator.
 
 
 enum (<<= 1)
@@ -479,8 +486,10 @@ public PHY_CoreTimer()
 	        PHY_Object[a][PHY_VZ] += PHY_Object[a][PHY_AZ];
 
             #if defined _inc_streamer
-                SetDynamicObjectPos(a, x1, y1, z1);
-                CallLocalFunction("PHY_OnDynamicObjectUpdate", "d", a);
+                if(IsValidDynamicObject(a))
+                    SetDynamicObjectPos(a, x1, y1, z1), CallLocalFunction("PHY_OnDynamicObjectUpdate", "d", a);
+                else
+                    SetObjectPos(a, x1, y1, z1), CallLocalFunction("PHY_OnObjectUpdate", "d", a);
             #else
     	        SetObjectPos(a, x1, y1, z1);
     	        CallLocalFunction("PHY_OnObjectUpdate", "d", a);
