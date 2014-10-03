@@ -16,7 +16,7 @@
 
 #include <modelsizes>
 #pragma compress 1
-#include <foreach>
+#include <YSI\y_iterate>
 
 #if !defined PHY_TIMER_INTERVAL
 	#define PHY_TIMER_INTERVAL (20)
@@ -31,15 +31,22 @@
 #define PHY_MODE_3D (0)
 #define PHY_MODE_2D (1)
 
-#if !defined FLOAT_INFINITY
-	#define FLOAT_INFINITY   (Float:0x7F800000)
+#if defined FLOAT_INFINITY
+	#undef FLOAT_INFINITY
 #endif
-#if !defined FLOAT_NEG_INFINITY
-	#define FLOAT_NEG_INFINITY (Float:0xFF800000)
+
+#if defined FLOAT_NEG_INFINITY
+	#undef FLOAT_NEG_INFINITY
 #endif
-#if !defined FLOAT_NAN
-	#define FLOAT_NAN     (Float:0xFFFFFFFF)
+
+#if defined FLOAT_NAN
+	#undef FLOAT_NAN
 #endif
+
+#define FLOAT_INFINITY   (Float:0x7F800000)
+#define FLOAT_NEG_INFINITY (Float:0xFF800000)
+#define FLOAT_NAN     (Float:0xFFFFFFFF)
+
 
 /* Callbacks */
 forward PHY_OnObjectUpdate(objectid);
@@ -132,7 +139,7 @@ enum E_PHY_PLAYER
 
 new
 	PHY_Player[MAX_PLAYERS][E_PHY_PLAYER];
-	
+
 
 /* Macros are self-explanatory */
 #define PHY_IsObjectUsingPhysics(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_USED)
@@ -147,6 +154,7 @@ new
 #define PHY_GetObjectAirResistance(%1) (PHY_Object[%1][PHY_AirResistance])
 #define PHY_GetObjectGravity(%1) (PHY_Object[%1][PHY_Gravity])
 #define PHY_GetObjectMode(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_MODE)
+#define PHY_MoveObject PHY_SetObjectVelocity
 
 
 static
@@ -207,13 +215,21 @@ public PHY_CoreTimer()
 	{
 	    if(PHY_Object[a][PHY_Properties] & PHY_OBJECT_USED)
 	    {
-            GetObjectPos(a, x, y, z);
+	    	#if defined _inc_streamer
+		    	if(IsValidDynamicObject(a))
+		    		GetDynamicObjectPos(a, x, y, z);
+		    	else
+		    		GetObjectPos(a, x, y, z);
+		    #else
+		    	GetObjectPos(a, x, y, z);
+            #endif
+
             x1 = x + PHY_Object[a][PHY_VX] * (PHY_TIMER_INTERVAL/1000.0);
 			y1 = y + PHY_Object[a][PHY_VY] * (PHY_TIMER_INTERVAL/1000.0);
 			if(PHY_GetObjectMode(a) == PHY_MODE_3D)
 			{
 			    z1 = z + PHY_Object[a][PHY_VZ] * (PHY_TIMER_INTERVAL/1000.0);
-			    
+
 				if(z1 > PHY_Object[a][PHY_HighZBound])
 				{
 				    if(PHY_Object[a][PHY_VZ] > 0)
@@ -248,7 +264,15 @@ public PHY_CoreTimer()
 					{
 					    if(a != b && PHY_Object[b][PHY_Properties] & PHY_OBJECT_USED && !PHY_IsObjectGhostWithObjects(b) && (!PHY_Object[a][PHY_World] || !PHY_Object[b][PHY_World] || PHY_Object[a][PHY_World] == PHY_Object[b][PHY_World]))
 					    {
-					        GetObjectPos(b, x2, y2, z2);
+					    	#if defined _inc_streamer
+					    		if(IsValidDynamicObject(b))
+					    			GetDynamicObjectPos(b, x2, y2, z2);
+					    		else
+					    			GetObjectPos(b, x2, y2, z2);
+					    	#else
+					        	GetObjectPos(b, x2, y2, z2);
+					        #endif
+
 					        dx = x1 - x2;
 					        dy = y1 - y2;
 					        dz = (PHY_GetObjectMode(a) == PHY_MODE_3D && PHY_GetObjectMode(b) == PHY_MODE_3D) ? (z1 - z2) : (0.0);
@@ -277,14 +301,24 @@ public PHY_CoreTimer()
 							   			newvx1 = ((PHY_Object[a][PHY_Mass] - PHY_Object[b][PHY_Mass]) * tmpvx1 + 2 * PHY_Object[b][PHY_Mass] * tmpvx2) / (PHY_Object[a][PHY_Mass] + PHY_Object[b][PHY_Mass]);
 		            	            	newvx2 = ((PHY_Object[b][PHY_Mass] - PHY_Object[a][PHY_Mass]) * tmpvx2 + 2 * PHY_Object[a][PHY_Mass] * tmpvx1) / (PHY_Object[a][PHY_Mass] + PHY_Object[b][PHY_Mass]);
 									}
-									
+
 									angle = -angle;
                                     PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
 		            	            PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
                            			PHY_Object[b][PHY_VX] = newvx2 * floatcos(angle, degrees) - newvy2 * floatsin(angle, degrees);
 		            	            PHY_Object[b][PHY_VY] = newvx2 * floatsin(angle, degrees) + newvy2 * floatcos(angle, degrees);
-
-                                    CallLocalFunction("PHY_OnObjectCollideWithObject", "dd", a, b);
+		            	            #if defined _inc_streamer
+		            	            	if(IsValidDynamicObject(a) && IsValidDynamicObject(b))
+		            	            		CallLocalFunction("OnD_ObjectCollideWithD_Object", "dd", a, b);
+		            	            	if(IsValidDynamicObject(a) && !IsValidDynamicObject(b))
+		            	            		CallLocalFunction("OnDynamicObjectCollideWithObject", "dd", a, b);
+		            	            	if(IsValidDynamicObject(b) && !IsValidDynamicObject(b))
+		            	            		CallLocalFunction("OnObjectCollideWithDynamicObject", "dd", a, b);
+		            	            	else
+		            	            		CallLocalFunction("PHY_OnObjectCollideWithObject", "dd", a, b);
+                                    #else
+                                        CallLocalFunction("PHY_OnObjectCollideWithObject", "dd", a, b);
+                                    #endif
 								}
 					        }
 					    }
@@ -317,8 +351,14 @@ public PHY_CoreTimer()
 									angle = angle + (newvy1 > 0 ? 90.0 : -90.0);
 									x1 = xclosest + (PHY_Object[a][PHY_Size] + 0.001) * floatcos(angle, degrees);
 									y1 = yclosest + (PHY_Object[a][PHY_Size] + 0.001) * floatsin(angle, degrees);
-
-		                            CallLocalFunction("PHY_OnObjectCollideWithWall", "dd", a, w);
+                                    #if defined _inc_streamer
+                                        if(IsValidDynamicObject(a))
+                                            CallLocalFunction("PHY_OnDynamicObjectCollideWithWall", "dd", a, w);
+                                        else
+                                            CallLocalFunction("PHY_OnObjectCollideWithWall", "dd", a, w);
+                                    #else
+		                              CallLocalFunction("PHY_OnObjectCollideWithWall", "dd", a, w);
+                                    #endif
 						        }
 						    }
 					    }
@@ -356,7 +396,14 @@ public PHY_CoreTimer()
 		                                    PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
 				            	            PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
 
-		                                    CallLocalFunction("PHY_OnObjectCollideWithCylinder", "dd", a, c);
+                                            #if defined _inc_streamer
+                                                if(IsValidDynamicObject(a))
+                                                    CallLocalFunction("PHY_OnDynamicObjectCollideWithCyl", "dd", a, c);
+                                                else
+                                                    CallLocalFunction("PHY_OnObjectCollideWithCylinder", "dd", a, c);
+                                            #else
+		                                      CallLocalFunction("PHY_OnObjectCollideWithCylinder", "dd", a, c);
+                                            #endif
 										}
 							        }
 						        }
@@ -373,7 +420,7 @@ public PHY_CoreTimer()
 						if((!PHY_Object[a][PHY_World] || !PHY_Player[i][PHY_World] || PHY_Object[a][PHY_World] == PHY_Player[i][PHY_World]))
 						{
 						    GetPlayerPos(i, x2, y2, z2);
-						        
+
 							if(z2 - PHY_Object[a][PHY_PlayerLowZ] - PHY_Object[a][PHY_Size] < z1 < z2 + PHY_Object[a][PHY_PlayerHighZ] + PHY_Object[a][PHY_Size])
 						    {
 								dx = x1 - x2;
@@ -393,8 +440,14 @@ public PHY_CoreTimer()
 										angle = -angle;
 	                                    PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
 			            	            PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
-
-	                                    CallLocalFunction("PHY_OnObjectCollideWithPlayer", "dd", a, i);
+                                        #if defined _inc_streamer
+                                            if(IsValidDynamicObject(a))
+                                                CallLocalFunction("PHY_OnDynamicObjectCollideWithPlayer", "dd", a, i);
+                                            else
+                                                CallLocalFunction("PHY_OnObjectCollideWithPlayer", "dd", a, i);
+                                        #else
+	                                       CallLocalFunction("PHY_OnObjectCollideWithPlayer", "dd", a, i);
+                                        #endif
 									}
 						        }
 						    }
@@ -420,13 +473,18 @@ public PHY_CoreTimer()
 				if(PHY_IsObjectRolling(a) && speed > 0.0)
 				    PHY_ApplyRotation(a, speed, moveangle);
 	        }
-	        
+
 	        PHY_Object[a][PHY_VX] += PHY_Object[a][PHY_AX];
 	        PHY_Object[a][PHY_VY] += PHY_Object[a][PHY_AY];
 	        PHY_Object[a][PHY_VZ] += PHY_Object[a][PHY_AZ];
-	        
-	        SetObjectPos(a, x1, y1, z1);
-	        CallLocalFunction("PHY_OnObjectUpdate", "d", a);
+
+            #if defined _inc_streamer
+                SetDynamicObjectPos(a, x1, y1, z1);
+                CallLocalFunction("PHY_OnDynamicObjectUpdate", "d", a);
+            #else
+    	        SetObjectPos(a, x1, y1, z1);
+    	        CallLocalFunction("PHY_OnObjectUpdate", "d", a);
+            #endif
 	    }
 	    else
 	        Iter_SafeRemove(ITER_Object, a, a);
@@ -442,33 +500,44 @@ size - object's sphere radius, taken from modelsizes.inc by default.
 mode - PHY_MODE_3D or PHY_MODE_2D. */
 stock PHY_InitObject(objectid, modelid = 0, Float:mass = 1.0, Float:size = FLOAT_NAN, mode = PHY_MODE_3D)
 {
-	if(IsValidObject(objectid))
-	{
-	    PHY_Object[objectid][PHY_Properties] = PHY_OBJECT_USED | (mode ? PHY_OBJECT_MODE : 0);
-	    PHY_Object[objectid][PHY_Mass] = mass;
-	    PHY_Object[objectid][PHY_World] = 0;
-	    PHY_Object[objectid][PHY_VX] = 0;
-	    PHY_Object[objectid][PHY_VY] = 0;
-	    PHY_Object[objectid][PHY_VZ] = 0;
-	    PHY_Object[objectid][PHY_Gravity] = 0;
-	    new
-	        Float:unused;
-	    GetObjectPos(objectid, unused, unused, PHY_Object[objectid][PHY_LowZBound]);
-		PHY_Object[objectid][PHY_HighZBound] = FLOAT_INFINITY;
-		PHY_Object[objectid][PHY_BoundConst] = 0;
-	    
-	    if(size != size)
-		{
-			if(modelid)
-			    PHY_Object[objectid][PHY_Size] = GetColSphereRadius(modelid);
-		}
-		else
-			PHY_Object[objectid][PHY_Size] = size;
-			
-		Iter_Add(ITER_Object, objectid);
-	    return 1;
-	}
-	return 0;
+    #if defined _inc_streamer
+    	if(IsValidObject(objectid) || IsValidDynamicObject(objectid))
+    #else
+        if(IsValidObject(objectid))
+    #endif
+    	{
+    	    PHY_Object[objectid][PHY_Properties] = PHY_OBJECT_USED | (mode ? PHY_OBJECT_MODE : 0);
+    	    PHY_Object[objectid][PHY_Mass] = mass;
+    	    PHY_Object[objectid][PHY_World] = 0;
+    	    PHY_Object[objectid][PHY_VX] = 0;
+    	    PHY_Object[objectid][PHY_VY] = 0;
+    	    PHY_Object[objectid][PHY_VZ] = 0;
+    	    PHY_Object[objectid][PHY_Gravity] = 0;
+    	    new
+    	        Float:unused;
+    	    
+            #if defined _inc_streamer
+                if(!IsValidDynamicObject(objectid)) GetObjectPos(objectid, unused, unused, PHY_Object[objectid][PHY_LowZBound]);
+                else GetDynamicObjectPos(objectid, unused, unused, PHY_Object[objectid][PHY_LowZBound]);
+            #else
+                GetObjectPos(objectid, unused, unused, PHY_Object[objectid][PHY_LowZBound]);
+            #endif
+
+    		PHY_Object[objectid][PHY_HighZBound] = FLOAT_INFINITY;
+    		PHY_Object[objectid][PHY_BoundConst] = 0;
+
+    	    if(size != size)
+    		{
+    			if(modelid)
+    			    PHY_Object[objectid][PHY_Size] = GetColSphereRadius(modelid);
+    		}
+    		else
+    			PHY_Object[objectid][PHY_Size] = size;
+
+    		Iter_Add(ITER_Object, objectid);
+    	    return 1;
+    	}
+    return 0;
 }
 
 /* Stops using physics for objectid (doesn't destroy it). */
@@ -662,15 +731,31 @@ stock PHY_ApplyRotation(objectid, Float:speed, Float:moveangle)
 {
 	new
 	    Float:rx, Float:ry, Float:rz;
-    GetObjectRot(objectid, rx, ry, rz);
+    #if defined _inc_streamer
+    if(IsValidDynamicObject(objectid))
+        GetDynamicObjectRot(objectid, rx, ry, rz);
+    else
+        GetObjectRot(objectid, rx, ry, rz);
+    #else
+        GetObjectRot(objectid, rx, ry, rz);
+    #endif
 	rx -= speed * (PHY_TIMER_INTERVAL/1000.0) * (180.0/3.14159) / PHY_Object[objectid][PHY_Size];
 	if(rx < 0.0)
 		rx += 360.0;
 	rz = moveangle;
 	//PHY_Roll(rx, ry, rz, PHY_Object[a][PHY_VX], PHY_Object[a][PHY_VY], ((speed * PHY_TIMER_INTERVAL)/1000) * (180/3.14159) / PHY_Object[a][PHY_Size]);
-	SetObjectRot(objectid, rx, ry, rz);
+
+    #if defined _inc_streamer
+        if(IsValidDynamicObject(objectid))
+            SetDynamicObjectRot(objectid, rx, ry, rz);
+        else
+            SetObjectRot(objectid, rx, ry, rz);
+    #else
+            SetObjectRot(objectid, rx, ry, rz);
+    #endif
 	return 1;
 }
+
 
 /* Creates a collision wall (straight line) from A(x1, y1) to B(x2, y2).
 constant should be from 0.0 to 1.0. If it is 1.0 the object doesn't lose velocity,
@@ -698,13 +783,15 @@ stock PHY_CreateWall(Float:x1, Float:y1, Float:x2, Float:y2, Float:constant = 1.
 			PHY_Wall[i][PHY_B] = (x2 - x1);
 			PHY_Wall[i][PHY_C] = (y2 - y1) * x1 - (x2 - x1) * y1;*/
 			//PHY_Wall[i][PHY_Q] = -((y2 - y1) * x1)/(x2 - x1) + y1;
-			
+
 			Iter_Add(ITER_Wall, i);
 	        return i;
 	    }
 	}
 	return -1;
 }
+
+
 
 /* Creates four walls that form an area. Works like IsPlayerInArea. */
 stock PHY_CreateArea(Float:minX, Float:minY, Float:maxX, Float:maxY, Float:constant = 1.0, Float:low = FLOAT_NEG_INFINITY, Float:high = FLOAT_INFINITY)
@@ -754,7 +841,7 @@ stock PHY_CreateCylinder(Float:x, Float:y, Float:size, Float:constant = 1.0, Flo
 	        PHY_Cylinder[i][PHY_Z1] = low;
 	        PHY_Cylinder[i][PHY_Z2] = high;
 	        PHY_Cylinder[i][PHY_BounceConst] = constant;
-			
+
 			Iter_Add(ITER_Cylinder, i);
 	        return i;
 	    }
@@ -833,7 +920,6 @@ stock QuatMultiply(Float:w1, Float:x1, Float:y1, Float:z1, Float:w2, Float:x2, F
 	q_x = w1*x2 + x1*w2 + y1*z2 - z1*y2;
 	q_y = w1*y2 - x1*z2 + y1*w2 + z1*x2;
 	q_z = w1*z2 + x1*y2 - y1*x2 + z1*w2;
-	
 	QuatNormalize(q_w, q_x, q_y, q_z);
 }
 
