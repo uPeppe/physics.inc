@@ -190,6 +190,16 @@ forward PHY_CoreTimer();
 public PHY_CoreTimer()
 {
 	new
+	    #if defined COLANDREAS
+		Float:mod,
+		Float:crx,
+		Float:cry,
+		Float:crz,
+		Float:cx,
+		Float:cy,
+		Float:cz,
+		#endif
+		
 		Float:x,
 		Float:y,
 		Float:z,
@@ -221,17 +231,10 @@ public PHY_CoreTimer()
 		Float:newvx1,
 		Float:newvx2,
 		Float:newvz1,
-		Float:newvz2,
-		Float:mod,
-		Float:crx,
-		Float:cry,
-		Float:crz,
-		Float:cx,
-		Float:cy,
-		Float:cz,
+		Float:newvz2
 		/*Float:sx,
 		Float:sy*/;
-	foreach(ITER_Object, a)
+ 	foreach(new a : ITER_Object)
 	{
 		if(PHY_Object[a][PHY_Properties] & PHY_OBJECT_USED)
 		{
@@ -295,7 +298,7 @@ public PHY_CoreTimer()
 			{
 				if(!PHY_IsObjectGhostWithObjects(a))
 				{
-					foreach(ITER_Object, b)
+					foreach(new b : ITER_Object)
 					{
 						if(a != b && PHY_Object[b][PHY_Properties] & PHY_OBJECT_USED && !PHY_IsObjectGhostWithObjects(b) && (!PHY_Object[a][PHY_World] || !PHY_Object[b][PHY_World] || PHY_Object[a][PHY_World] == PHY_Object[b][PHY_World]))
 						{
@@ -431,7 +434,7 @@ public PHY_CoreTimer()
 				
 				if(!PHY_IsObjectGhostWithWalls(a))
 				{
-					foreach(ITER_Wall, w)
+					foreach(new w : ITER_Wall)
 					{
 						if(PHY_Wall[w][PHY_Created])
 						{
@@ -467,7 +470,7 @@ public PHY_CoreTimer()
 				}
 				if(!PHY_IsObjectGhostWithCylinders(a))
 				{
-					foreach(ITER_Cylinder, c)
+					foreach(new c : ITER_Cylinder)
 					{
 						if(PHY_Cylinder[c][PHY_Created])
 						{
@@ -507,7 +510,7 @@ public PHY_CoreTimer()
 				}
 				if(PHY_IsObjectCollidingWithPlayers(a))
 				{
-					foreach(Player, i)
+					foreach(new i : Player)
 					{
 						if((!PHY_Object[a][PHY_World] || !PHY_Player[i][PHY_World] || PHY_Object[a][PHY_World] == PHY_Player[i][PHY_World]))
 						{
