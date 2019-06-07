@@ -34,6 +34,9 @@
 #define PHY_MODE_3D (0)
 #define PHY_MODE_2D (1)
 
+#define ROLLING_MODE_DEFAULT (0)
+#define ROLLING_MODE_ADVANCED (1)
+
 #if !defined FLOAT_INFINITY
 	#define FLOAT_INFINITY   (Float:0x7F800000)
 #endif
@@ -59,6 +62,7 @@ enum (<<= 1)
 	PHY_OBJECT_USED = 0b01,
 	PHY_OBJECT_MODE,
 	PHY_OBJECT_ROLL,
+	PHY_OBJECT_ROLLING_MODE,
 	PHY_OBJECT_COLANDREAS_BOUNDS,
 	PHY_OBJECT_COLANDREAS_COLLS,
 	PHY_OBJECT_GHOST_OBJECTS,
@@ -79,6 +83,14 @@ enum E_PHY_OBJECT
 	Float:PHY_AX,
 	Float:PHY_AY,
 	Float:PHY_AZ,
+	Float:PHY_QX,
+	Float:PHY_QY,
+	Float:PHY_QZ,
+	Float:PHY_QW,
+	Float:PHY_AngularVelocity,
+	Float:PHY_AxisX,
+	Float:PHY_AxisY,
+	Float:PHY_AxisZ,
 	Float:PHY_Friction,
 	Float:PHY_AirResistance,
 	Float:PHY_Gravity,
@@ -158,6 +170,14 @@ new
 #define PHY_GetObjectAirResistance(%1) (PHY_Object[%1][PHY_AirResistance])
 #define PHY_GetObjectGravity(%1) (PHY_Object[%1][PHY_Gravity])
 #define PHY_GetObjectMode(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_MODE)
+#define PHY_IsRollingModeAdvanced(%1) (PHY_Object[%1][PHY_Properties] & PHY_OBJECT_ROLLING_MODE)
+
+/* Quaternion Constance */
+new
+	Float:QuatCX = 0.05547,
+	Float:QuatCY = 0.05548,
+	Float:QuatCZ = 0.0,
+	Float:QuatCW = 0.9969173337;
 
 
 static
@@ -593,6 +613,12 @@ stock PHY_InitObject(objectid, modelid = 0, Float:mass = 1.0, Float:size = FLOAT
 		PHY_Object[objectid][PHY_VY] = 0;
 		PHY_Object[objectid][PHY_VZ] = 0;
 		PHY_Object[objectid][PHY_Gravity] = 0;
+		
+		PHY_Object[objectid][PHY_QX] = QuatCX;
+		PHY_Object[objectid][PHY_QY] = QuatCY;
+		PHY_Object[objectid][PHY_QZ] = QuatCZ;
+		PHY_Object[objectid][PHY_QW] = QuatCW;
+
 		new
 			Float:x, Float:y, Float:z;
 		GetObjectPos(objectid, x, y, z);
@@ -631,6 +657,11 @@ stock PHY_SetObjectVelocity(objectid, Float:vx, Float:vy, Float:vz = 0.0)
 		PHY_Object[objectid][PHY_VX] = vx;
 		PHY_Object[objectid][PHY_VY] = vy;
 		PHY_Object[objectid][PHY_VZ] = vz;
+
+		PHY_Object[objectid][PHY_QX] = QuatCX * -vy;
+		PHY_Object[objectid][PHY_QY] = QuatCY * -vx;
+		PHY_Object[objectid][PHY_QZ] = QuatCZ;
+		PHY_Object[objectid][PHY_QW] = QuatCW;
 		return 1;
 	}
 	return 0;
@@ -735,8 +766,9 @@ stock PHY_UseColAndreas(objectid, mode = 1)
 	return 0;
 }
 
-/* Starts rolling the object when it moves of toggle = 1 or stops if toggle = 0. */
-stock PHY_RollObject(objectid, toggle = 1)
+/* Starts rolling the object when it moves of toggle = 1 or stops if toggle = 0.
+rollinmode = ROLLING_MODE_DEFAULT (Euler angles) or ROLLING_MODE_ADVANCED (Quaternions)*/
+stock PHY_RollObject(objectid, toggle = 1, rollingmode = ROLLING_MODE_DEFAULT)
 {
 	if(PHY_Object[objectid][PHY_Properties] & PHY_OBJECT_USED)
 	{
@@ -744,6 +776,12 @@ stock PHY_RollObject(objectid, toggle = 1)
 			PHY_Object[objectid][PHY_Properties] |= PHY_OBJECT_ROLL;
 		else
 			PHY_Object[objectid][PHY_Properties] &= ~PHY_OBJECT_ROLL;
+			
+        if(rollingmode == ROLLING_MODE_ADVANCED){
+			PHY_Object[objectid][PHY_Properties] |= PHY_OBJECT_ROLLING_MODE;
+        }
+		else
+			PHY_Object[objectid][PHY_Properties] &= ~PHY_OBJECT_ROLLING_MODE;
 		return 1;
 	}
 	return 0;
@@ -844,14 +882,55 @@ stock PHY_ApplyRotation(objectid, Float:speed, Float:moveangle)
 {
 	new
 		Float:rx, Float:ry, Float:rz;
-	GetObjectRot(objectid, rx, ry, rz);
-	rx -= speed * (PHY_TIMER_INTERVAL/1000.0) * (180.0/3.14159) / PHY_Object[objectid][PHY_Size];
-	if(rx < 0.0)
-		rx += 360.0;
-	rz = moveangle;
-	//FixRot(rx, ry, rz);
-	//PHY_Roll(rx, ry, rz, PHY_Object[objectid][PHY_VX], PHY_Object[objectid][PHY_VY], ((speed * PHY_TIMER_INTERVAL)/1000) * (180/3.14159) / PHY_Object[objectid][PHY_Size]);
+
+	if(PHY_IsRollingModeAdvanced(objectid))
+	{
+		new
+			Float:new_quat[4],
+			Float:Static[4],
+			Float:Euler[3];
+			
+		Static[0] = QuatCX * -PHY_Object[objectid][PHY_VY];
+		Static[1] = QuatCY * -PHY_Object[objectid][PHY_VX];
+		Static[2] = QuatCZ;
+		Static[3] = QuatCW;
+		
+		Ex_QuatNormalize(Static[0],Static[1],Static[2],Static[3],new_quat[0],new_quat[1],new_quat[2],new_quat[3]);
+		Static[0] = new_quat[0];
+		Static[1] = new_quat[1];
+		Static[2] = new_quat[2];
+		Static[3] = new_quat[3];
+		
+		Ex_QuatNormalize(PHY_Object[objectid][PHY_QX],PHY_Object[objectid][PHY_QY],PHY_Object[objectid][PHY_QZ],PHY_Object[objectid][PHY_QW],new_quat[0],new_quat[1],new_quat[2],new_quat[3]);
+		PHY_Object[objectid][PHY_QX] = new_quat[0];
+		PHY_Object[objectid][PHY_QY] = new_quat[1];
+		PHY_Object[objectid][PHY_QZ] = new_quat[2];
+		PHY_Object[objectid][PHY_QW] = new_quat[3];
+
+		Ex_QuatMultiply(PHY_Object[objectid][PHY_QX],PHY_Object[objectid][PHY_QY],PHY_Object[objectid][PHY_QZ],PHY_Object[objectid][PHY_QW],Static[0],Static[1],Static[2],Static[3],new_quat[0],new_quat[1],new_quat[2],new_quat[3]);
+		
+		PHY_Object[objectid][PHY_QX] = new_quat[0];
+		PHY_Object[objectid][PHY_QY] = new_quat[1];
+		PHY_Object[objectid][PHY_QZ] = new_quat[2];
+		PHY_Object[objectid][PHY_QW] = new_quat[3];
+		
+		Ex_Quat2Euler(PHY_Object[objectid][PHY_QX],PHY_Object[objectid][PHY_QY],PHY_Object[objectid][PHY_QZ],PHY_Object[objectid][PHY_QW],Euler[0],Euler[1],Euler[2]);
+
+		rx = Euler[0];
+		ry = Euler[1];
+		rz = Euler[2] - 90.0;
+	}
+	else
+	{
+		GetObjectRot(objectid, rx, ry, rz);
+		rx -= speed * (PHY_TIMER_INTERVAL/1000.0) * (180.0/3.14159) / PHY_Object[objectid][PHY_Size];
+		if(rx < 0.0)
+			rx += 360.0;
+		rz = moveangle;
+	}
+
 	SetObjectRot(objectid, rx, ry, rz);
+
 	return 1;
 }
 
@@ -1049,102 +1128,53 @@ stock FixAngle(&Float:x)
 		x = 359.99;
 }
 
-/* Function to make a better ball rolling, not used because it doesn't work well. */
-stock PHY_Roll(&Float:x, &Float:y, &Float:z, Float:dx, Float:dy, Float:speed)
+stock vectorcrossp(Float:v1x, Float:v1y, Float:v1z, Float:v2x, Float:v2y, Float:v2z, &Float:c1, &Float:c2, &Float:c3)
 {
-	new Float:q_roll[4];
-	new Float:vx, Float:vy, Float:vz;
-	vectorcrossp(dx, dy, 0.0, 0.0, 0.0, 1.0, vx, vy, vz);
-	QuatFromAxisAngle(vx, vy, vz, -speed, q_roll[0], q_roll[1], q_roll[2], q_roll[3]);
+	c1 = (v1y * v2z) - (v1z * v2y),
+	c2 = (v1z * v2x) - (v1x * v2z),
+	c3 = (v1x * v2y) - (v1y * v2x);
+}
 
-	new Float:q_rot[4];
-	EulerToQuaternion(x, y, z, q_rot[0], q_rot[1], q_rot[2], q_rot[3]);
+stock Ex_QuatMultiply(Float:x1, Float:y1, Float:z1,Float:w1,Float:x2, Float:y2, Float:z2,Float:w2,&Float:new_qx,&Float:new_qy,&Float:new_qz,&Float:new_qw)
+{
+	new_qx = w2*x1 + w1*x2 + y1*z2 - z1*y2;
+	new_qy = w2*y1 + w1*y2 + x2*z1 - z2*x1;
+	new_qz = w2*z1 + w1*z2 + x1*y2 - x2*y1;
+	new_qw = w1*w2 - x1*x2 - y1*y2 - z1*z2;
+}
 
-	new Float:q_res[4];
-	QuatMultiply(q_rot[0], q_rot[1], q_rot[2], q_rot[3], q_roll[0], q_roll[1], q_roll[2], q_roll[3], q_res[0], q_res[1], q_res[2], q_res[3]);
+stock Ex_QuatNormalize(Float:x1, Float:y1, Float:z1,Float:w1,&Float:new_qx,&Float:new_qy,&Float:new_qz,&Float:new_qw)
+{
+	new Float:L = floatsqroot(x1*x1 + y1*y1 + z1*z1 + w1*w1);
+	new_qx = x1 / L;
+	new_qy = y1 / L;
+	new_qz = z1 / L;
+	new_qw = w1 / L;
 	
-	QuaternionToEuler(q_res[0], q_res[1], q_res[2], q_res[3], x, y, z);
-}
-
-stock QuatMultiply(Float:w1, Float:x1, Float:y1, Float:z1, Float:w2, Float:x2, Float:y2, Float:z2, &Float:q_w, &Float:q_x, &Float:q_y, &Float:q_z)
-{
-	q_w = w1*w2 - x1*x2 - y1*y2 - z1*z2;
-	q_x = w1*x2 + x1*w2 + y1*z2 - z1*y2;
-	q_y = w1*y2 - x1*z2 + y1*w2 + z1*x2;
-	q_z = w1*z2 + x1*y2 - y1*x2 + z1*w2;
 	
-	QuatNormalize(q_w, q_x, q_y, q_z);
 }
 
-stock QuatFromAxisAngle(Float:x, Float:y, Float:z, Float:angle, &Float:q_w, &Float:q_x, &Float:q_y, &Float:q_z)
+stock Ex_Quat2Euler(Float:Quat_x,Float:Quat_y,Float:Quat_z,Float:Quat_w,&Float:Euler_rx,&Float:Euler_ry,&Float:Euler_rz)
 {
-	new
-		Float:omega,
-		Float:s;
-
-	s = floatsqroot(x*x + y*y + z*z);
-
-	if (s > 0.01)
-	{
-
-		x /= s;
-		y /= s;
-		z /= s;
-
-		omega = 0.5 * angle;
-		s = floatsin(omega, degrees);
-
-		q_x = s*x;
-		q_y = s*y;
-		q_z = s*z;
-		q_w = floatcos(omega, degrees);
-	}
-	else
-	{
-		q_x = 0.0;
-		q_y = 0.0;
-		q_z = 0.0;
-		q_w = 1.0;
-	}
+	//new Float:b = 2* (Quat_w*Quat_x) - (Quat_z * Quat_y);
 	
-	QuatNormalize(q_w, q_x, q_y, q_z);
-}
-  
-stock QuatNormalize(&Float:q_w, &Float:q_x, &Float:q_y, &Float:q_z)
-{
-	new Float:magnitude = floatsqroot(q_w*q_w + q_x*q_x + q_y*q_y + q_z*q_z);
-	if (magnitude == 0.0)
-	{
-		q_w = 1.0;
-		q_x = 0.0;
-		q_y = 0.0;
-		q_z = 0.0;
-	}
-	else
-	{
-		q_w /= magnitude;
-		q_x /= magnitude;
-		q_y /= magnitude;
-		q_z /= magnitude;
-	}
-}
 
-stock EulerToQuaternion(Float:z, Float:x, Float:y, &Float:q_w, &Float:q_x, &Float:q_y, &Float:q_z)
-{
-	new Float:c1 = floatcos(x/2.0, degrees);
-	new Float:s1 = floatsin(x/2.0, degrees);
-	new Float:c2 = floatcos(y/2.0, degrees);
-	new Float:s2 = floatsin(y/2.0, degrees);
-	new Float:c3 = floatcos(z/2.0, degrees);
-	new Float:s3 = floatsin(z/2.0, degrees);
-	new Float:c1c2 = c1 * c2;
-	new Float:s1s2 = s1 * s2;
-	q_w = c1c2 * c3 - s1s2 * s3;
-	q_x = c1c2 * s3 + s1s2 * c3;
-	q_y = s1*c2*c3 + c1*s2*s3;
-	q_z = c1*s2*c3 - s1*c2*s3;
+	Euler_rx = -asin(2* (Quat_w*Quat_x - Quat_z * Quat_y));
+	Euler_ry = -atan2((Quat_w * Quat_w) - (Quat_x * Quat_x) - (Quat_y * Quat_y) + (Quat_z * Quat_z),2 *((Quat_y*Quat_w) + (Quat_z * Quat_x)));
+	Euler_rz = -atan2((Quat_w * Quat_w) - (Quat_x * Quat_x) + (Quat_y * Quat_y) - (Quat_z * Quat_z),2 *((Quat_z*Quat_w) + (Quat_y * Quat_x)));
+	
 
-	QuatNormalize(q_w, q_x, q_y, q_z);
+	//Euler_ry = -atan2(Quat_w ,2 * Quat_y);
+	//Euler_rz = -atan2(Quat_w, 2 * Quat_z);
+		
+	/*if(Quat_y == Quat_z && Quat_x == 0) 
+	{
+		print("Quat_y == Quat_z && Quat_x == 0 ");
+		Euler_ry = -atan2(Quat_w ,2 * Quat_y);
+		Euler_rz = -atan2(Quat_w, 2 * Quat_z);
+		
+	} */
+	
 }
 
 stock QuaternionToEuler(Float:q_w, Float:q_x, Float:q_y, Float:q_z, &Float:z, &Float:x, &Float:y)
@@ -1159,7 +1189,7 @@ stock QuaternionToEuler(Float:q_w, Float:q_x, Float:q_y, Float:q_z, &Float:z, &F
 	if (test < -0.499) { // singularity at south pole
 		x = -2 * atan2(q_x,q_w);
 		y = -90.0;
-		z = 0;
+		z = 0; 
 		return;
 	}
 	new Float:sqx = q_x*q_x;
@@ -1168,13 +1198,6 @@ stock QuaternionToEuler(Float:q_w, Float:q_x, Float:q_y, Float:q_z, &Float:z, &F
 	x = atan2(2*q_y*q_w-2*q_x*q_z , 1 - 2*sqy - 2*sqz);
 	y = asin(2*test);
 	z = atan2(2*q_x*q_w-2*q_y*q_z , 1 - 2*sqx - 2*sqz);
-}
-
-stock vectorcrossp(Float:v1x, Float:v1y, Float:v1z, Float:v2x, Float:v2y, Float:v2z, &Float:c1, &Float:c2, &Float:c3)
-{
-	c1 = (v1y * v2z) - (v1z * v2y),
-	c2 = (v1z * v2x) - (v1x * v2z),
-	c3 = (v1x * v2y) - (v1y * v2x);
 }
 
 
