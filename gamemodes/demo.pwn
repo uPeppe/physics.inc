@@ -57,6 +57,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 		PHY_SetObjectZBound(b, _, _, 0.5);
 		return 1;
 	}
+	
 	if (strcmp("/2d", cmdtext, true, 10) == 0)
 	{
 		new a = CreateObject(1598, 1960.3783, 1344.0, 15.3746-0.69, 0, 0, 0);
@@ -73,5 +74,30 @@ public OnPlayerCommandText(playerid, cmdtext[])
 		PHY_SetObjectAirResistance(b, 0.1);
 		return 1;
 	}
+	
+	if (strcmp("/clear", cmdtext, true, 10) == 0)
+	{
+		for(new i = 2; i < MAX_OBJECTS; i++)
+		{
+		    if(!IsValidObject(i))
+		        break;
+			PHY_DeleteObject(i);
+			DestroyObject(i);
+		}
+		return 1;
+	}
+	
+	if (strcmp("/random", cmdtext, true, 10) == 0)
+	{
+		for(new i = 2; i < MAX_OBJECTS; i++)
+		{
+		    if(!IsValidObject(i))
+		        break;
+		        
+			PHY_SetObjectVelocity(i, random(15) * 0.5, random(15) * 0.5, random(15) * 0.5);
+		}
+		return 1;
+	}
+
 	return 0;
 }
