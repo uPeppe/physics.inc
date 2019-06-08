@@ -9,7 +9,7 @@ stock const
 		{2736.7180, -1856.2570, 422.8372},
 		{2677.3398, -1856.5066, 422.8372}
 	};
-	
+
 
 new
 	Ball = -1,
@@ -19,7 +19,7 @@ new
 	BallHolder = -1,
 	PlayerText:pPowerTD[MAX_PLAYERS],
 	Text:PowerTD[2];
-	
+
 main() { }
 
 public OnGameModeInit()
@@ -28,14 +28,14 @@ public OnGameModeInit()
 	AddPlayerClass(107,1958.3783,1343.1572,15.3746,270.1425,0,0,0,0,0,0);
 	AddPlayerClass(104,1958.3783,1343.1572,15.3746,270.1425,0,0,0,0,0,0);
 	UsePlayerPedAnims();
-	
+
 	SetTimer("PowerBar", 20, 1);
-	
+
 	CreateBall();
 	LoadCollisions();
 	LoadMap();
 	LoadTextDraws();
-	
+
 	return 1;
 }
 
@@ -51,7 +51,7 @@ public OnPlayerRequestClass(playerid, classid)
 	SetPlayerFacingAngle(playerid, 270.0);
 	SetPlayerCameraPos(playerid,256.0815,-43.0475,1004.0234);
 	SetPlayerCameraLookAt(playerid,258.4893,-41.4008,1002.0234);
-	
+
 	switch(classid)
 	{
 	    case 0:
@@ -79,9 +79,9 @@ public OnPlayerSpawn(playerid)
 {
     if(BallHolder == playerid)
 	    RecreateBall();
-	    
+
 	SetPlayerPos(playerid, BallSpawn[0] + random(5), BallSpawn[1] + random(5), BallSpawn[2]);
-	
+
 	ApplyAnimation(playerid, "WAYFARER", "null", 0.0, 0, 0, 0, 0, 0); // Preloads anim lib
 	ApplyAnimation(playerid, "FIGHT_D", "null", 0.0, 0, 0, 0, 0, 0); // Preloads anim lib
     return 1;
@@ -101,16 +101,16 @@ public OnPlayerCommandText(playerid, cmdtext[])
 
 #define PRESSED(%0) \
 	(newkeys & (%0) && !(oldkeys & (%0)))
-	
+
 #define RELEASED(%0) \
 	(!(newkeys & (%0)) && oldkeys & (%0))
-	
+
 public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 {
 	new
 	    tick = GetTickCount(),
 		dif;
-	    
+
 	if (PRESSED(KEY_HANDBRAKE))
 		pLastTick[playerid] = tick;
 	else if (RELEASED(KEY_HANDBRAKE))
@@ -130,11 +130,11 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 		            Float:speed,
 		            Float:angle,
 		            Float:vx, Float:vy, Float:vz;
-		            
+
 				if(dif > 1000)
 				    dif = 2000 - dif;
 		        speed = (float(dif + 400) / (1000)) * 20.0;
-		        
+
 		        if(BallHolder != -1)
 		        {
 			        DestroyBall();
@@ -142,12 +142,12 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 			        SetObjectPos(Ball, ox, oy, oz);
 			        BallHolder = -1;
 			    }
-		        
+
 		        GetPlayerFacingAngle(playerid, angle);
 		        vx = speed * floatsin(-angle, degrees),
 		        vy = speed * floatcos(-angle, degrees);
 		        vz = /*(newkeys & KEY_SECONDARY_ATTACK) ? (speed / 1.3) :*/ (speed / 5.2);
-		        
+
 		        /*GetPlayerCameraFrontVector(playerid, vx, vy, vz);
 		        vx *= speed;
 		        vy *= speed;
@@ -162,12 +162,12 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 				else if(dif > 300)
 					ApplyAnimation(playerid, "FIGHT_D", "FightD_1", 4.1, 0, 1, 1, 0, 0);
 				PlayerPlaySound(playerid, 1130, 0.0, 0.0, 0.0);
-				
+
 				LastTouch = playerid;
 			}
 		}
 	}
-	
+
 	if (PRESSED(KEY_WALK))
 		pLastTick[playerid] = tick;
 	else if (RELEASED(KEY_WALK))
@@ -211,12 +211,12 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 				else if(dif > 300)
 					ApplyAnimation(playerid, "FIGHT_D", "FightD_1", 4.1, 0, 1, 1, 0, 0);
 				PlayerPlaySound(playerid, 1130, 0.0, 0.0, 0.0);
-				
+
 				LastTouch = playerid;
 			}
 		}
 	}
-	
+
 	if (PRESSED(KEY_SECONDARY_ATTACK))
 		pLastTick[playerid] = tick;
 	else if (RELEASED(KEY_SECONDARY_ATTACK))
@@ -260,12 +260,12 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 				else if(dif > 300)
 					ApplyAnimation(playerid, "FIGHT_D", "FightD_1", 4.1, 0, 1, 1, 0, 0);
 				PlayerPlaySound(playerid, 1130, 0.0, 0.0, 0.0);
-				
+
 				LastTouch = playerid;
 			}
 		}
 	}
-	
+
 	if(PRESSED(KEY_FIRE))
 	{
 	    new
@@ -286,18 +286,18 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 			{
 			    GetObjectRot(Ball, ox, oy, oz);
 			    AttachObjectToPlayer(Ball, playerid, 0.0, 0.6, -0.875, ox, oy, oz);
-			    
+
 				if(BallHolder != -1)
 				    PlayerPlaySound(BallHolder, 1130, 0.0, 0.0, 0.0);
 				PlayerPlaySound(playerid, 1130, 0.0, 0.0, 0.0);
-				
+
 				BallHolder = playerid;
 				LastTouch = playerid;
 			}
 		}
 		ApplyAnimation(playerid, "CARRY", "crry_prtial", 1.0, 0, 0, 0, 0, 0);
 	}
-	    
+
 	return 1;
 }
 
@@ -305,11 +305,11 @@ stock CreateBall()
 {
 	if(Ball != -1)
 	    return;
-	    
+
 	Ball = CreateObject(2114, BallSpawn[0], BallSpawn[1], BallSpawn[2] - 0.875, 0, 0, 0, 100.0);
 	SetObjectMaterial(Ball, 0, 5033, "union_las", "ws_carparkwall2", 0);
 	PHY_InitObject(Ball, 2114);
-	PHY_RollObject(Ball);
+	PHY_RollObject(Ball, _, PHY_ROLLING_MODE_ADVANCED);
 	PHY_SetObjectFriction(Ball, 7.0);
 	PHY_SetObjectAirResistance(Ball, 0.2);
 	PHY_SetObjectGravity(Ball, 10.0);
@@ -361,7 +361,7 @@ stock LoadCollisions()
 	// Pole
 	PHY_CreateCylinder(2711.87, -1857.30, 0.3, _, _, 425.87);
 	PHY_CreateCylinder(2701.92, -1857.30, 0.3, _, _, 425.87);
-	
+
 	// Goal
     PHY_CreateWall(2701.92, -1747.10, 2701.92, -1741.60, 0.5, _, 425.87);
 	PHY_CreateWall(2701.92, -1741.60, 2711.89, -1741.60, 0.5, _, 425.87);
@@ -377,13 +377,13 @@ public PHY_OnObjectUpdate(objectid)
 {
 	if(objectid != Ball)
 	    return 1;
-	    
+
 	new
 	    Float:x, Float:y, Float:z,
 		goal;
 
 	GetBallPos(x, y, z);
-	
+
 	if(!(2669.03 < x < 2745.12 && -1864.08 < y < -1740.54))
 	{
 	    RecreateBall();
@@ -417,9 +417,9 @@ public PHY_OnObjectUpdate(objectid)
 	        new
 	            string[128],
 				name[MAX_PLAYER_NAME];
-			
+
 	        Goal = 1;
-	        
+
 	        GetPlayerName(LastTouch, name, sizeof name);
 	        format(string, sizeof string, "%s has scored a goal.", name);
 	        SendClientMessageToAll(-1, string);
@@ -431,7 +431,7 @@ public PHY_OnObjectUpdate(objectid)
 	    Goal = 0;
 	    PHY_SetObjectZBound(Ball, _, FLOAT_INFINITY, 0.5);
 	}
-	    
+
 	return 1;
 }
 
@@ -867,7 +867,7 @@ public PowerBar()
 	new
 	    tick = GetTickCount(),
 		dif;
-	foreach(Player, i)
+	foreach(new i : Player)
 	{
 	    if(pLastTick[i] == -1)
 	    {
