@@ -513,6 +513,7 @@ stock Is2DPointInRangeOfPoint(Float:x, Float:y, Float:x2, Float:y2, Float:range)
     y2 -= y;
     return ((x2 * x2) + (y2 * y2)) < (range * range);
 }
+
 stock IsObjectInSphere(objectid,Float:x,Float:y,Float:z,Float:radius2)
 {
     new Float:x1,Float:y1,Float:z1,Float:tmpdis;
