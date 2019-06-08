@@ -423,7 +423,7 @@ public OnPlayerDeath(playerid, killerid, reason)
 public OnPlayerSpawn(playerid)
 {
     PreloadAnimLib(playerid, "POOL");
-    
+
     if(PoolAimer == playerid)
 	{
         PoolAimer = -1;
@@ -663,7 +663,7 @@ stock InitBall(i)
 {
     PHY_InitObject(PoolBall[i][bObject], 3003, _, _, PHY_MODE_2D);
     PHY_SetObjectFriction(PoolBall[i][bObject], 0.40);
-    PHY_RollObject(PoolBall[i][bObject]);
+    PHY_RollObject(PoolBall[i][bObject], _, PHY_ROLLING_MODE_ADVANCED);
     PHY_SetObjectWorld(PoolBall[i][bObject], 3);
     PoolBall[i][bExisting] = 1;
 }
