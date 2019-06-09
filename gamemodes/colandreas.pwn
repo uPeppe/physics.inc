@@ -217,7 +217,7 @@ command(ball, playerid, params[])
 	new a = CreateObject(1598, x, y, z-0.69, 0, 0, 0);
 	PHY_InitObject(a, 1598, mass, _, PHY_MODE_3D);
 	PHY_SetObjectVelocity(a, 6.0 * floatsin(-ang, degrees), 6.0 * floatcos(-ang, degrees), vz);
-	PHY_RollObject(a);
+	PHY_RollObject(a, _, PHY_ROLLING_MODE_ADVANCED);
 	PHY_SetObjectFriction(a, 0.25);
 	PHY_SetObjectAirResistance(a, 0.1);
 	PHY_SetObjectGravity(a, 7.1);
@@ -235,7 +235,7 @@ command(stopped, playerid, params[])
 	new a = CreateObject(1598, x, y, z-0.69, 0, 0, 0);
 	PHY_InitObject(a, 1598, 1.0, _, PHY_MODE_3D);
 	//PHY_SetObjectVelocity(a, 5.0 * floatsin(-ang, degrees), 5.0 * floatcos(-ang, degrees));
-	PHY_RollObject(a);
+	PHY_RollObject(a, _, PHY_ROLLING_MODE_ADVANCED);
 	PHY_SetObjectFriction(a, 1.3);
 	PHY_SetObjectAirResistance(a, 0.1);
 	PHY_SetObjectGravity(a, 7.1);
@@ -271,7 +271,7 @@ command(nocol, playerid, params[])
 	new a = CreateObject(1598, x, y, z-0.69, 0, 0, 0);
 	PHY_InitObject(a, 1598, mass, _, PHY_MODE_3D);
 	PHY_SetObjectVelocity(a, 6.0 * floatsin(-ang, degrees), 6.0 * floatcos(-ang, degrees), vz);
-	PHY_RollObject(a);
+	PHY_RollObject(a, _, PHY_ROLLING_MODE_ADVANCED);
 	PHY_SetObjectFriction(a, 0.25);
 	PHY_SetObjectAirResistance(a, 0.1);
 	PHY_SetObjectGravity(a, 7.1);
