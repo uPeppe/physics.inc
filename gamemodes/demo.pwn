@@ -79,8 +79,8 @@ public OnPlayerCommandText(playerid, cmdtext[])
 	{
 		for(new i = 2; i < MAX_OBJECTS; i++)
 		{
-		    if(!IsValidObject(i))
-		        break;
+			if(!IsValidObject(i))
+				break;
 			PHY_DeleteObject(i);
 			DestroyObject(i);
 		}
@@ -91,9 +91,9 @@ public OnPlayerCommandText(playerid, cmdtext[])
 	{
 		for(new i = 2; i < MAX_OBJECTS; i++)
 		{
-		    if(!IsValidObject(i))
-		        break;
-		        
+			if(!IsValidObject(i))
+				break;
+				
 			PHY_SetObjectVelocity(i, random(15) * 0.5, random(15) * 0.5, random(15) * 0.5);
 		}
 		return 1;
