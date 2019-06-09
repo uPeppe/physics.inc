@@ -207,7 +207,7 @@ forward PHY_CoreTimer();
 public PHY_CoreTimer()
 {
 	new
-	    #if defined COLANDREAS
+		#if defined COLANDREAS
 		Float:mod,
 		Float:crx,
 		Float:cry,
@@ -251,7 +251,7 @@ public PHY_CoreTimer()
 		Float:newvz2
 		/*Float:sx,
 		Float:sy*/;
- 	foreach(new a : ITER_Object)
+	foreach(new a : ITER_Object)
 	{
 		if(PHY_Object[a][PHY_Properties] & PHY_OBJECT_USED)
 		{
@@ -384,7 +384,7 @@ public PHY_CoreTimer()
 								
 								if(mag < 0.0)
 								{
-						   			angle = -atan2(dy, dx);
+									angle = -atan2(dy, dx);
 									tmpvx1 = PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees);
 									newvy1 = PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees);
 									tmpvx2 = PHY_Object[b][PHY_VX] * floatcos(angle, degrees) - PHY_Object[b][PHY_VY] * floatsin(angle, degrees);
@@ -394,16 +394,16 @@ public PHY_CoreTimer()
 										newvx2 = -tmpvx2;
 									else if(PHY_Object[b][PHY_Mass] == FLOAT_INFINITY)
 										newvx1 = -tmpvx1;
-						   			else
-							   		{
-							   			newvx1 = ((PHY_Object[a][PHY_Mass] - PHY_Object[b][PHY_Mass]) * tmpvx1 + 2 * PHY_Object[b][PHY_Mass] * tmpvx2) / (PHY_Object[a][PHY_Mass] + PHY_Object[b][PHY_Mass]);
+									else
+									{
+										newvx1 = ((PHY_Object[a][PHY_Mass] - PHY_Object[b][PHY_Mass]) * tmpvx1 + 2 * PHY_Object[b][PHY_Mass] * tmpvx2) / (PHY_Object[a][PHY_Mass] + PHY_Object[b][PHY_Mass]);
 										newvx2 = ((PHY_Object[b][PHY_Mass] - PHY_Object[a][PHY_Mass]) * tmpvx2 + 2 * PHY_Object[a][PHY_Mass] * tmpvx1) / (PHY_Object[a][PHY_Mass] + PHY_Object[b][PHY_Mass]);
 									}
 
 									angle = -angle;
 									PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
 									PHY_Object[a][PHY_VY] = newvx1 * floatsin(angle, degrees) + newvy1 * floatcos(angle, degrees);
-						   			PHY_Object[b][PHY_VX] = newvx2 * floatcos(angle, degrees) - newvy2 * floatsin(angle, degrees);
+									PHY_Object[b][PHY_VX] = newvx2 * floatcos(angle, degrees) - newvy2 * floatsin(angle, degrees);
 									PHY_Object[b][PHY_VY] = newvx2 * floatsin(angle, degrees) + newvy2 * floatcos(angle, degrees);
 
 									CallLocalFunction("PHY_OnObjectCollideWithObject", "dd", a, b);
@@ -467,7 +467,7 @@ public PHY_CoreTimer()
 									//mag = y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees) - (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) * PHY_Wall[w][PHY_M] - PHY_Wall[w][PHY_Q];
 									//mag = PHY_Wall[w][PHY_A] * (x1 + PHY_Object[a][PHY_Size] * floatsin(-moveangle, degrees)) + PHY_Wall[w][PHY_B] * (y1 + PHY_Object[a][PHY_Size] * floatcos(-moveangle, degrees)) + PHY_Wall[w][PHY_C];
 									//if((dist >= 0) ? (mag <= 0) : (mag >= 0))
-				   			 		newvx1 = PHY_Wall[w][PHY_BounceConst] * (PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees));
+									newvx1 = PHY_Wall[w][PHY_BounceConst] * (PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees));
 									newvy1 = -PHY_Wall[w][PHY_BounceConst] * (PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees));
 									angle = -angle;
 									PHY_Object[a][PHY_VX] = newvx1 * floatcos(angle, degrees) - newvy1 * floatsin(angle, degrees);
@@ -507,7 +507,7 @@ public PHY_CoreTimer()
 
 										if(mag < 0.0)
 										{
-								   			angle = -atan2(dy, dx);
+											angle = -atan2(dy, dx);
 											newvx1 = -PHY_Cylinder[c][PHY_BounceConst] * (PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees));
 											newvy1 = PHY_Cylinder[c][PHY_BounceConst] * (PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees));
 
@@ -545,7 +545,7 @@ public PHY_CoreTimer()
 
 									if(mag < 0.0)
 									{
-							   			angle = -atan2(dy, dx);
+										angle = -atan2(dy, dx);
 										newvx1 = -PHY_Object[a][PHY_PlayerConst] * (PHY_Object[a][PHY_VX] * floatcos(angle, degrees) - PHY_Object[a][PHY_VY] * floatsin(angle, degrees));
 										newvy1 = PHY_Object[a][PHY_PlayerConst] * (PHY_Object[a][PHY_VX] * floatsin(angle, degrees) + PHY_Object[a][PHY_VY] * floatcos(angle, degrees));
 
@@ -577,9 +577,9 @@ public PHY_CoreTimer()
 					PHY_Object[a][PHY_VZ] -= PHY_Object[a][PHY_VZ] * PHY_Object[a][PHY_AirResistance] * (PHY_TIMER_INTERVAL/1000.0);
 				}
 				if(PHY_IsObjectRolling(a) && speed > 0.0)
-				    if(PHY_IsObjectRollingModeAdvanced(a))
-				        PHY_ApplyQuaternionsRotation(a, speed, moveangle);
-				    else
+					if(PHY_IsObjectRollingModeAdvanced(a))
+						PHY_ApplyQuaternionsRotation(a, speed, moveangle);
+					else
 						PHY_ApplyRotation(a, speed, moveangle);
 			}
 			
@@ -769,14 +769,14 @@ stock PHY_RollObject(objectid, toggle = 1, rollingmode = PHY_ROLLING_MODE_DEFAUL
 		else
 			PHY_Object[objectid][PHY_Properties] &= ~PHY_OBJECT_ROLL;
 			
-        if(rollingmode == PHY_ROLLING_MODE_ADVANCED){
+		if(rollingmode == PHY_ROLLING_MODE_ADVANCED){
 			PHY_Object[objectid][PHY_Properties] |= PHY_OBJECT_ROLLING_MODE;
 			
 			new
-			    Float:rx, Float:ry, Float:rz;
+				Float:rx, Float:ry, Float:rz;
 			GetObjectRot(objectid, rx, ry, rz);
 			PHY_GetRotationQuaternion(rx, ry, rz, PHY_Object[objectid][PHY_QW], PHY_Object[objectid][PHY_QX], PHY_Object[objectid][PHY_QY], PHY_Object[objectid][PHY_QZ]);
-        }
+		}
 		else
 			PHY_Object[objectid][PHY_Properties] &= ~PHY_OBJECT_ROLLING_MODE;
 		return 1;
@@ -901,7 +901,7 @@ stock PHY_ApplyQuaternionsRotation(objectid, Float:speed, Float:moveangle)
 		Float:vx, Float:vy, Float:vz,
 		Float:quat[4];
 		
-    dx = floatsin(-moveangle, degrees);
+	dx = floatsin(-moveangle, degrees);
 	dy = floatcos(-moveangle, degrees);
 
 	PHY_vectorcrossp(dx, dy, 0.0, 0.0, 0.0, 1.0, vx, vy, vz);
@@ -919,7 +919,7 @@ stock PHY_ApplyQuaternionsRotation(objectid, Float:speed, Float:moveangle)
 	PHY_Object[objectid][PHY_QZ] = quat[3];
 	
 	PHY_GetQuaternionAngles(quat[0], quat[1], quat[2], quat[3], rx, ry, rz);
-    
+	
 	SetObjectRot(objectid, rx, ry, rz);
 	return 1;
 }
@@ -1075,11 +1075,11 @@ stock PHY_UpdateBounds(objectid, Float:x, Float:y, Float:z)
 {
 	new Float:unused, Float:bound;
 	// CA_RayCastLineAngle(x, y, z, x, y, z - 1000.0, unused, unused, bound, PHY_Object[objectid][PHY_LowZRX], PHY_Object[objectid][PHY_LowZRY], unused);
-	CA_RayCastLineAngle(x, y, z, x, y, z - 1000.0, unused, unused, bound);
+	CA_RayCastLine(x, y, z, x, y, z - 1000.0, unused, unused, bound);
 	if(bound != 0.0 && bound == bound)
 		PHY_Object[objectid][PHY_LowZBound] = bound + PHY_Object[objectid][PHY_Size];
 	bound = 0.0;
-	CA_RayCastLine(x, y, z, x, y, z + 1000.0, unused, unused, bound);
+	CA_RayCastLine(x, y, z, x, y, z + 1000.0, unused, unused, bound, unused, unused, unused);
 	if(bound > PHY_Object[objectid][PHY_LowZBound] && bound == bound)
 		PHY_Object[objectid][PHY_HighZBound] = bound - PHY_Object[objectid][PHY_Size];
 	else
@@ -1184,68 +1184,68 @@ https://github.com/IllidanS4/i_quat/blob/master/i_quat.inc */
 
 static stock Float:PHY_asin_limit(Float:value)
 {
-    if(value > 1.0) value = 1.0;
-    else if(value < -1.0) value = -1.0;
-    return asin(value);
+	if(value > 1.0) value = 1.0;
+	else if(value < -1.0) value = -1.0;
+	return asin(value);
 }
 
 static stock Float:PHY_atan2_limit(Float:x, Float:y)
 {
-    if(x > 1.0) x = 1.0;
-    else if(x < -1.0) x = -1.0;
-    if(y > 1.0) y = 1.0;
-    else if(y < -1.0) y = -1.0;
-    return atan2(x, y);
+	if(x > 1.0) x = 1.0;
+	else if(x < -1.0) x = -1.0;
+	if(y > 1.0) y = 1.0;
+	else if(y < -1.0) y = -1.0;
+	return atan2(x, y);
 }
 
 stock PHY_GetQuatProduct(const Float:q1[4], const Float:q2[4], Float:q3[4])
 {
-    new Float:w = q1[0]*q2[0] - q1[1]*q2[1] - q1[2]*q2[2] - q1[3]*q2[3];
-    new Float:x = q1[0]*q2[1] + q1[1]*q2[0] + q1[2]*q2[3] - q1[3]*q2[2];
-    new Float:y = q1[0]*q2[2] - q1[1]*q2[3] + q1[2]*q2[0] + q1[3]*q2[1];
-    new Float:z = q1[0]*q2[3] + q1[1]*q2[2] - q1[2]*q2[1] + q1[3]*q2[0];
-    q3[0] = w, q3[1] = x, q3[2] = y, q3[3] = z;
+	new Float:w = q1[0]*q2[0] - q1[1]*q2[1] - q1[2]*q2[2] - q1[3]*q2[3];
+	new Float:x = q1[0]*q2[1] + q1[1]*q2[0] + q1[2]*q2[3] - q1[3]*q2[2];
+	new Float:y = q1[0]*q2[2] - q1[1]*q2[3] + q1[2]*q2[0] + q1[3]*q2[1];
+	new Float:z = q1[0]*q2[3] + q1[1]*q2[2] - q1[2]*q2[1] + q1[3]*q2[0];
+	q3[0] = w, q3[1] = x, q3[2] = y, q3[3] = z;
 }
 
 stock PHY_GetQuaternionAngles(Float:w, Float:x, Float:y, Float:z, &Float:xa, &Float:ya, &Float:za)
 {
-    #if defined QUAT_FLOAT_EPSILON
-    static const Float:epsilon = QUAT_FLOAT_EPSILON;
-    #else
-    static const Float:epsilon = 0.00000202655792236328125;
-    #endif
+	#if defined QUAT_FLOAT_EPSILON
+	static const Float:epsilon = QUAT_FLOAT_EPSILON;
+	#else
+	static const Float:epsilon = 0.00000202655792236328125;
+	#endif
 
-    new Float:temp = 2*y*z - 2*x*w;
+	new Float:temp = 2*y*z - 2*x*w;
 
-    if(temp >= 1-epsilon)
-    {
-        xa = 90.0;
-        ya = -PHY_atan2_limit(y, w);
-        za = -PHY_atan2_limit(z, w);
-    }else if(-temp >= 1-epsilon)
-    {
-        xa = -90.0;
-        ya = -PHY_atan2_limit(y, w);
-        za = -PHY_atan2_limit(z, w);
-    }else{
-        xa = PHY_asin_limit(temp);
-        ya = -PHY_atan2_limit(x*z + y*w, 0.5 - x*x - y*y);
-        za = -PHY_atan2_limit(x*y + z*w, 0.5 - x*x - z*z);
-    }
+	if(temp >= 1-epsilon)
+	{
+		xa = 90.0;
+		ya = -PHY_atan2_limit(y, w);
+		za = -PHY_atan2_limit(z, w);
+	}else if(-temp >= 1-epsilon)
+	{
+		xa = -90.0;
+		ya = -PHY_atan2_limit(y, w);
+		za = -PHY_atan2_limit(z, w);
+	}else{
+		xa = PHY_asin_limit(temp);
+		ya = -PHY_atan2_limit(x*z + y*w, 0.5 - x*x - y*y);
+		za = -PHY_atan2_limit(x*y + z*w, 0.5 - x*x - z*z);
+	}
 }
 
 stock PHY_GetRotationQuaternion(Float:x, Float:y, Float:z, &Float:qw, &Float:qx, &Float:qy, &Float:qz)
 {
-    new Float:cx = floatcos(-0.5*x, degrees);
-    new Float:sx = floatsin(-0.5*x, degrees);
-    new Float:cy = floatcos(-0.5*y, degrees);
-    new Float:sy = floatsin(-0.5*y, degrees);
-    new Float:cz = floatcos(-0.5*z, degrees);
-    new Float:sz = floatsin(-0.5*z, degrees);
-    qw = cx * cy * cz + sx * sy * sz;
-    qx = cx * sy * sz + sx * cy * cz;
-    qy = cx * sy * cz - sx * cy * sz;
-    qz = cx * cy * sz - sx * sy * cz;
+	new Float:cx = floatcos(-0.5*x, degrees);
+	new Float:sx = floatsin(-0.5*x, degrees);
+	new Float:cy = floatcos(-0.5*y, degrees);
+	new Float:sy = floatsin(-0.5*y, degrees);
+	new Float:cz = floatcos(-0.5*z, degrees);
+	new Float:sz = floatsin(-0.5*z, degrees);
+	qw = cx * cy * cz + sx * sy * sz;
+	qx = cx * sy * sz + sx * cy * cz;
+	qy = cx * sy * cz - sx * cy * sz;
+	qz = cx * cy * sz - sx * sy * cz;
 }
 
 
