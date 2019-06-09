@@ -48,7 +48,7 @@ public DogTimer()
 	PHY_GetObjectVelocity(dog, vx, vy, vz);
 	if(z <= PHY_Object[dog][PHY_LowZBound] + 0.1)
 	{
-	    PHY_SetObjectVelocity(dog, vx, vy, 1.2);
+		PHY_SetObjectVelocity(dog, vx, vy, 1.2);
 	}
 	return 1;
 }
@@ -77,50 +77,50 @@ public PHY_OnObjectUpdate(objectid)
 {
 	if(objectid == dog)
 	{
-	    new Float:x, Float:y, Float:z;
-	    GetObjectRot(dog, x, y, z);
+		new Float:x, Float:y, Float:z;
+		GetObjectRot(dog, x, y, z);
 		if(destangle < 0.0)
-		    destangle += 360.0;
+			destangle += 360.0;
 		else if(destangle > 360.0)
-		    destangle -= 360.0;
-        if(z < 0.0)
-		    z += 360.0;
+			destangle -= 360.0;
+		if(z < 0.0)
+			z += 360.0;
 		else if(z > 360.0)
-		    z -= 360.0;
-	    if(z != destangle)
-	    {
-	        if(destangle > z)
-	        {
-	            if(destangle - z < 180.0)
-	            {
-	                z += 10.0;
-	                if(z > destangle)
-	                    z = destangle;
+			z -= 360.0;
+		if(z != destangle)
+		{
+			if(destangle > z)
+			{
+				if(destangle - z < 180.0)
+				{
+					z += 10.0;
+					if(z > destangle)
+						z = destangle;
 				}
 				else
 				{
-	                z -= 10.0;
-	                if(z < destangle)
-	                    z = destangle;
+					z -= 10.0;
+					if(z < destangle)
+						z = destangle;
 				}
-	        }
-	        else
-	        {
-	            if(z - destangle < 180.0)
-	            {
-	                z -= 10.0;
-	                if(z < destangle)
-	                    z = destangle;
+			}
+			else
+			{
+				if(z - destangle < 180.0)
+				{
+					z -= 10.0;
+					if(z < destangle)
+						z = destangle;
 				}
 				else
 				{
-	                z += 10.0;
-	                if(z > destangle)
-	                    z = destangle;
+					z += 10.0;
+					if(z > destangle)
+						z = destangle;
 				}
-	        }
-	        SetObjectRot(dog, x, y, z);
-	    }
+			}
+			SetObjectRot(dog, x, y, z);
+		}
 	}
 	return 1;
 }
@@ -129,9 +129,9 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 {
 	/*if(newkeys & KEY_HANDBRAKE)
 	{
-	    new Float:x, Float:y, Float:z, Float:rx, Float:ry, Float:rz;
-	    GetObjectPos(object, x, y, z);
-	    CA_RayCastLineAngle(x, y, z, x, y, z - 1000.0, x, y, z, rx, ry, rz);
+		new Float:x, Float:y, Float:z, Float:rx, Float:ry, Float:rz;
+		GetObjectPos(object, x, y, z);
+		CA_RayCastLineAngle(x, y, z, x, y, z - 1000.0, x, y, z, rx, ry, rz);
 		new string[128];
 		format(string, sizeof string, "%f %f %f", rx, ry, rz);
 		SendClientMessage(playerid, -1, string);
@@ -148,13 +148,13 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 		GetPlayerCameraFrontVector(playerid, vx, vy, vz);
 		if((vx == 0.0 && vy == 0.0 && vz == 0.0) || (vx != vx || vy != vy || vz != vz) || newkeys & KEY_SPRINT)
 		{
-		    
+			
 		}
 		else
 		{
-		    new Float:cx, Float:cy, Float:cz;
-		    GetPlayerCameraPos(playerid, cx, cy, cz);
-		    CA_RayCastLine(cx, cy, cz, cx + 100.0 * vx, cy + 100.0 * vy, cz + 100.0 * vz, x, y, z);
+			new Float:cx, Float:cy, Float:cz;
+			GetPlayerCameraPos(playerid, cx, cy, cz);
+			CA_RayCastLine(cx, cy, cz, cx + 100.0 * vx, cy + 100.0 * vy, cz + 100.0 * vz, x, y, z);
 		}
 		PHY_GetObjectVelocity(dog, vx, vy, vz);
 		vx = x - ox;
@@ -174,15 +174,15 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 	
 	if(oldkeys & KEY_FIRE && !(newkeys & KEY_FIRE))
 	{
-	    new str = GetTickCount() - jumpstr;
-	    if(str > 500)
-	        str = 500;
+		new str = GetTickCount() - jumpstr;
+		if(str > 500)
+			str = 500;
 		new Float:x, Float:y, Float:z;
 		GetObjectPos(dog, x, y, z);
 		new Float:vx, Float:vy, Float:vz;
 		PHY_GetObjectVelocity(dog, vx, vy, vz);
 		if(z <= PHY_Object[dog][PHY_LowZBound] + 0.1)
-		    PHY_SetObjectVelocity(dog, vx, vy, 5.0);
+			PHY_SetObjectVelocity(dog, vx, vy, 5.0);
 	}
 	return 1;
 }
@@ -210,10 +210,10 @@ command(go, playerid, params[])
 
 command(ball, playerid, params[])
 {
-    new Float:x, Float:y, Float:z, Float:ang, Float:vz, Float:mass;
-    sscanf(params, "F(0.0)F(1.0)", vz, mass);
-    GetPlayerPos(playerid, x, y, z);
-    GetPlayerFacingAngle(playerid, ang);
+	new Float:x, Float:y, Float:z, Float:ang, Float:vz, Float:mass;
+	sscanf(params, "F(0.0)F(1.0)", vz, mass);
+	GetPlayerPos(playerid, x, y, z);
+	GetPlayerFacingAngle(playerid, ang);
 	new a = CreateObject(1598, x, y, z-0.69, 0, 0, 0);
 	PHY_InitObject(a, 1598, mass, _, PHY_MODE_3D);
 	PHY_SetObjectVelocity(a, 6.0 * floatsin(-ang, degrees), 6.0 * floatcos(-ang, degrees), vz);
@@ -229,9 +229,9 @@ command(ball, playerid, params[])
 
 command(stopped, playerid, params[])
 {
-    new Float:x, Float:y, Float:z, Float:ang;
-    GetPlayerPos(playerid, x, y, z);
-    GetPlayerFacingAngle(playerid, ang);
+	new Float:x, Float:y, Float:z, Float:ang;
+	GetPlayerPos(playerid, x, y, z);
+	GetPlayerFacingAngle(playerid, ang);
 	new a = CreateObject(1598, x, y, z-0.69, 0, 0, 0);
 	PHY_InitObject(a, 1598, 1.0, _, PHY_MODE_3D);
 	//PHY_SetObjectVelocity(a, 5.0 * floatsin(-ang, degrees), 5.0 * floatcos(-ang, degrees));
@@ -264,10 +264,10 @@ command(veh, playerid, params[])
 
 command(nocol, playerid, params[])
 {
-    new Float:x, Float:y, Float:z, Float:ang, Float:vz, Float:mass;
-    sscanf(params, "F(0.0)F(1.0)", vz, mass);
-    GetPlayerPos(playerid, x, y, z);
-    GetPlayerFacingAngle(playerid, ang);
+	new Float:x, Float:y, Float:z, Float:ang, Float:vz, Float:mass;
+	sscanf(params, "F(0.0)F(1.0)", vz, mass);
+	GetPlayerPos(playerid, x, y, z);
+	GetPlayerFacingAngle(playerid, ang);
 	new a = CreateObject(1598, x, y, z-0.69, 0, 0, 0);
 	PHY_InitObject(a, 1598, mass, _, PHY_MODE_3D);
 	PHY_SetObjectVelocity(a, 6.0 * floatsin(-ang, degrees), 6.0 * floatcos(-ang, degrees), vz);
