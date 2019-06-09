@@ -1179,7 +1179,7 @@ stock PHY_QuatNormalize(&Float:q_w, &Float:q_x, &Float:q_y, &Float:q_z)
 }
 
 
-/* The following are from i_quat.inc, made by IllidanS4 (spacemud)
+/* The following are from i_quat.inc, made by IllidanS4
 https://github.com/IllidanS4/i_quat/blob/master/i_quat.inc */
 
 static stock Float:PHY_asin_limit(Float:value)
