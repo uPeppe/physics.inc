@@ -305,7 +305,7 @@ public PHY_CoreTimer()
 						if(PHY_Object[a][PHY_VZ] < 0)
 							PHY_Object[a][PHY_VZ] = 0;
 					}
-					else
+					else if(z1 > PHY_Object[a][PHY_LowZBound])
 						PHY_Object[a][PHY_VZ] -= PHY_Object[a][PHY_Gravity] * (PHY_TIMER_INTERVAL/1000.0);
 				}
 			}
@@ -1179,7 +1179,7 @@ stock PHY_QuatNormalize(&Float:q_w, &Float:q_x, &Float:q_y, &Float:q_z)
 }
 
 
-/* The following are from i_quat.inc, made by IllidanS4
+/* The following are from i_quat.inc, made by IllidanS4 (spacemud)
 https://github.com/IllidanS4/i_quat/blob/master/i_quat.inc */
 
 static stock Float:PHY_asin_limit(Float:value)
