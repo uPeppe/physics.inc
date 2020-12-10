@@ -14,7 +14,7 @@ sampctl package install Fairuz-Afdhal/physics.inc
 Include in your code and begin using the library:
 
 ```pawn
-#include <physics.inc>
+#include <physics>
 ```
 
 ## Usage
