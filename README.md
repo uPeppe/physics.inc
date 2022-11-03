@@ -1,6 +1,11 @@
 # physics.inc
-physics.inc - SA-MP library to simulate 2D and 3D physics (realistic movements, collisions, and more)
+physics.inc - SA-MP library to simulate 2D and 3D physics (projectile physics, realistic movements, collisions, and more)
 
-http://forum.sa-mp.com/showthread.php?t=446286
 
 https://www.burgershot.gg/showthread.php?tid=641
+
+
+
+Pool game reproduced utilizing this library (VIDEO)
+
+[![POOL](https://img.youtube.com/vi/yOtlNQvgJ6Q/0.jpg)](https://www.youtube.com/watch?v=yOtlNQvgJ6Q)
