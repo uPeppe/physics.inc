@@ -2,7 +2,7 @@
 physics.inc - SA-MP (GTA San Andreas MultiPlayer) library to simulate 2D and 3D physics (projectile physics, realistic movements, collisions, and more)
 
 
-https://www.burgershot.gg/showthread.php?tid=641
+https://forum.open.mp/showthread.php?tid=641
 
 
 
